@@ -1,0 +1,76 @@
+﻿<Window x:Class="UI.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:dx="clr-namespace:UI"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="DirectX 11 Hook" Height="400" Width="525" ResizeMode="NoResize">
+    <Window.Resources>
+        <dx:ColorConverter x:Key="ColorConverter"/>
+    </Window.Resources>
+    <Grid>
+        <TabControl Name="Tabs" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabItem Name="TabInject" Header="Inject">
+                <StackPanel Orientation="Horizontal">
+                    <ListView x:Name="ProcessList" Width="425"
+                              Margin="10" VerticalAlignment="Stretch"
+                              SelectionChanged="ProcessList_OnSelectionChanged">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Process Name" DisplayMemberBinding="{Binding ProcessName}"
+                                                Width="300"/>
+                                <GridViewColumn Header="Process ID" Width="90" DisplayMemberBinding="{Binding Id}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <Button x:Name="ButtonInject" Content="Inject"  IsEnabled="False"
+                            VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                            Padding="10,5" Margin="0,0,10,10" Click="ButtonInject_Click"/>
+                </StackPanel>
+            </TabItem>
+            <TabItem Name="TabEditModels" Header="Edit Saved Models" IsEnabled="false">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <ListView Name="SavedModelsList" Margin="10" VerticalAlignment="Stretch" Width="390"
+                          d:DataContext="{d:DesignData ModelParameters}">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150"/>
+                                <GridViewColumn Header="Color">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <xctk:ColorPicker SelectedColor="{Binding Color, Converter={StaticResource ColorConverter}}" 
+                                                          d:DataContext="{d:DesignData ModelParameters}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Enabled" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding Enabled}" IsThreeState="False"
+                                                  d:DataContext="{d:DesignData ModelParameters}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <Button Name="ButtonSaveChanges" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="10 5" Margin="0 0 10 10" Click="ButtonSaveChanges_Click">
+                        Save Changes
+                    </Button>
+                </StackPanel>
+            </TabItem>
+            <TabItem Name="TabLog" Header="Log">
+                <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <ScrollViewer VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Height="340">
+                        <Border BorderBrush="LightGray" BorderThickness="1" Margin="10">
+                            <TextBlock Name="TextLog" Padding="5" TextWrapping="Wrap" VerticalAlignment="Stretch" />
+                        </Border>
+                    </ScrollViewer>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+        
+    </Grid>
+</Window>

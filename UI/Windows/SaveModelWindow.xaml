@@ -1,0 +1,47 @@
+﻿<Window x:Class="UI.Windows.SaveModelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="Save Model" Height="305" Width="300"
+        WindowStyle="ToolWindow" ResizeMode="NoResize">
+    <Grid>
+        <StackPanel Margin="10">
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Name:"/>
+                <TextBox Name="TextBoxName" Width="220" Padding="4" MaxLines="1" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Index Count:"/>
+                <Label Name="LabelIndexCount" Content="2389"></Label>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Index Byte Width:"/>
+                <Label Name="LabelIndexByteWidth" Content="238339"></Label>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Stride:"/>
+                <Label Name="LabelStride" Content="36"></Label>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Vertex Byte Width:"/>
+                <Label Name="LabelVertexByteWidth" Content="2389"></Label>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Texture Format:"/>
+                <Label Name="LabelTextureFormat" Content="2389"></Label>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Color:"/>
+                <xctk:ColorPicker Name="ColorPicker" SelectedColor="Purple" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Label Content="Enabled:"/>
+                <CheckBox Name="CheckBoxEnabled" IsChecked="True" Margin="6" />
+            </StackPanel>
+            <Button Name="ButtonSave" Content="Save" Margin="0,10,0,0" Padding="10,3" HorizontalAlignment="Center" Click="ButtonSave_Click"></Button>
+        </StackPanel>
+    </Grid>
+</Window>

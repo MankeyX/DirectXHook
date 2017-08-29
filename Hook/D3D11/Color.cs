@@ -12,6 +12,7 @@ namespace Hook.D3D11
         public byte G { get; set; }
         public byte B { get; set; }
 
+        // Divide by 25 to combat glow post-process effect.
         public float Rf => (R / 255f) / 25f;
         public float Gf => (G / 255f) / 25f;
         public float Bf => (B / 255f) / 25f;

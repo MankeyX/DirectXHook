@@ -207,5 +207,23 @@ namespace UI.Windows
             
             _serverInterface.ReloadModels(models.Where(x => x.Enabled).ToList());
         }
+
+        private void CheckBoxEnable_Checked(object sender, RoutedEventArgs e)
+        {
+            ToggleModels();
+        }
+
+        private bool _toggleModels;
+        private void ToggleModels()
+        {
+            _toggleModels = !_toggleModels;
+
+            foreach (ModelParameters item in SavedModelsList.Items.SourceCollection)
+            {
+                item.Enabled = _toggleModels;
+            }
+
+            SavedModelsList.Items.Refresh();
+        }
     }
 }

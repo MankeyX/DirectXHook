@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using Hook.D3D11.Extensions;
 using Hook.Infrastructure;
 using SharpDX.Direct3D11;
@@ -52,40 +51,33 @@ namespace Hook.D3D11
 
             if (!OnlyRenderSavedModels)
                 _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
+            
+            var currentItem = GetCurrentItem(indexCount);
 
-            try
+            if (IsLoggerEnabled)
             {
-                var currentItem = GetCurrentItem(indexCount);
-
-                if (IsLoggerEnabled)
+                if (_selectedByteWidth == _deviceContext.GetIndexByteWidth() / 500)
                 {
-                    if (_selectedByteWidth == _deviceContext.GetIndexByteWidth() / 500)
+                    if (!_modelsInScene.Contains(currentItem))
+                        _modelsInScene.Add(currentItem);
+
+                    if (IsCurrentModel(currentItem, _currentIndex))
                     {
-                        if (!_modelsInScene.Contains(currentItem))
-                            _modelsInScene.Add(currentItem);
-
-                        if (IsCurrentModel(currentItem, _currentIndex))
-                        {
-                            DrawCustom(indexCount, startIndex, baseVertexLocation, Color.Red);
-                            return;
-                        }
-
-                        DrawCustom(indexCount, startIndex, baseVertexLocation, Color.White);
+                        DrawCustom(indexCount, startIndex, baseVertexLocation, Color.Red);
                         return;
                     }
-                }
 
-                lock (SavedModels)
-                {
-                    if (IsSavedModel(currentItem, out var index))
-                    {
-                        DrawCustom(indexCount, startIndex, baseVertexLocation, SavedModels[index].Color);
-                    }
+                    DrawCustom(indexCount, startIndex, baseVertexLocation, Color.White);
+                    return;
                 }
             }
-            catch (Exception e)
+
+            lock (SavedModels)
             {
-                MessageBox.Show(e.ToString());
+                if (IsSavedModel(currentItem, out var index))
+                {
+                    DrawCustom(indexCount, startIndex, baseVertexLocation, SavedModels[index].Color);
+                }
             }
         }
 

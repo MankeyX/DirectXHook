@@ -36,20 +36,23 @@
                           d:DataContext="{d:DesignData ModelParameters}">
                         <ListView.View>
                             <GridView>
+                                <GridViewColumn Width="30">
+                                    <GridViewColumn.Header>
+                                        <CheckBox Name="CheckBoxEnable" Checked="CheckBoxEnable_Checked" Unchecked="CheckBoxEnable_Checked" />
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding Enabled}" IsThreeState="False"
+                                                  d:DataContext="{d:DesignData ModelParameters}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                                 <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150"/>
                                 <GridViewColumn Header="Color">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
                                             <xctk:ColorPicker SelectedColor="{Binding Color, Converter={StaticResource ColorConverter}}" 
                                                           d:DataContext="{d:DesignData ModelParameters}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Enabled" Width="100">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <CheckBox IsChecked="{Binding Enabled}" IsThreeState="False"
-                                                  d:DataContext="{d:DesignData ModelParameters}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>

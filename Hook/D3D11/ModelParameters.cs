@@ -4,7 +4,7 @@ using SharpDX.DXGI;
 namespace Hook.D3D11
 {
     [Serializable]
-    public class ModelParameters
+    public class ModelParameters : IComparable<ModelParameters>
     {
         public string Name { get; set; }
         public int IndexCount { get; set; }
@@ -57,6 +57,32 @@ namespace Hook.D3D11
                    $"Stride: {Stride}\n" +
                    $"Vertex Buffer Byte Width: {VertexByteWidth}\n" +
                    $"Format: {Format}";
+        }
+
+        public int CompareTo(ModelParameters other)
+        {
+            if (ReferenceEquals(this, other))
+                return 0;
+            if (ReferenceEquals(null, other))
+                return 1;
+
+            var indexCountComparison = IndexCount.CompareTo(other.IndexCount);
+            if (indexCountComparison != 0)
+                return indexCountComparison;
+
+            var indexByteWidthComparison = IndexByteWidth.CompareTo(other.IndexByteWidth);
+            if (indexByteWidthComparison != 0)
+                return indexByteWidthComparison;
+
+            var strideComparison = Stride.CompareTo(other.Stride);
+            if (strideComparison != 0)
+                return strideComparison;
+
+            var vertexByteWidthComparison = VertexByteWidth.CompareTo(other.VertexByteWidth);
+            if (vertexByteWidthComparison != 0)
+                return vertexByteWidthComparison;
+            
+            return Format.CompareTo(other.Format);
         }
     }
 }

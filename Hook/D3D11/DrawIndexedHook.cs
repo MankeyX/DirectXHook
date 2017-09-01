@@ -105,10 +105,10 @@ namespace Hook.D3D11
                 _modelsInScene[currentIndex] != null &&
                 _modelsInScene[currentIndex].Equals(currentModel);
         }
-
+        
         private bool IsSavedModel(ModelParameters model, out int savedItemIndex)
         {
-            return (savedItemIndex = SavedModels.IndexOf(model)) >= 0;
+            return (savedItemIndex = SavedModels.BinarySearch(model)) >= 0;
         }
 
         public int ChangeModel(int change)

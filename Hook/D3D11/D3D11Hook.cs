@@ -41,17 +41,11 @@ namespace Hook.D3D11
 
         private void OnModelsReloaded(List<ModelParameters> models)
         {
-            try
+            lock (_drawIndexedHook.SavedModels)
             {
-                lock (_drawIndexedHook.SavedModels)
-                {
-                    _drawIndexedHook.SavedModels = models;
-                    _shaders.Generate(models.Select(x => x.Color));
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.ToString());
+                _drawIndexedHook.SavedModels = models;
+                _drawIndexedHook.SavedModels.Sort();
+                _shaders.Generate(models.Select(x => x.Color));
             }
         }
 
@@ -76,14 +70,14 @@ namespace Hook.D3D11
                     };
                     while (!presentHook.Initialized) { }
                 }
-                
+
                 _shaders = new Shaders(_device);
 
                 using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(false, false), _shaders))
                 {
                     _server.NotifyHookStarted();
                     _server.Message("Ready for input...", null);
-                    
+
                     while (true)
                     {
                         if (_drawIndexedHook.IsLoggerEnabled)

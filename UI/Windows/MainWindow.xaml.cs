@@ -21,10 +21,9 @@ namespace UI.Windows
     {
         [DllImport("user32.dll")]
         public static extern bool ShowWindow(IntPtr windowHandle, int nCmdShow);
-
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr windowHandle);
-
+        private const int ForceMinimize = 11;
+        private const int ShowNormal = 1;
+        
         private string _saveFilePath;
         private SaveModelWindow _saveModelWindow;
         private IpcServerChannel _server;
@@ -41,7 +40,7 @@ namespace UI.Windows
         private void Initialize()
         {
             _saveFilePath = Path.Combine(Directory.GetCurrentDirectory(), "savedModels.txt");
-
+            
             _windowHandle = Process.GetCurrentProcess().MainWindowHandle;
 
             _saveModelWindow = new SaveModelWindow();
@@ -67,9 +66,10 @@ namespace UI.Windows
 
         private void FocusWindow()
         {
-            ShowWindow(_selectedProcess.MainWindowHandle, 11);
-            ShowWindow(_windowHandle, 1);
-            SetForegroundWindow(_windowHandle);
+            ShowWindow(_selectedProcess.MainWindowHandle, ForceMinimize);
+            ShowWindow(_windowHandle, ShowNormal);
+            Topmost = true;
+            Topmost = false;
         }
 
         private void SaveModelRequestRecieved(ModelParameters model)
@@ -81,6 +81,7 @@ namespace UI.Windows
             {
                 WriteToLog($"Saving model...\n{model}\n", null);
                 _saveModelWindow.Show(model);
+                _saveModelWindow.Owner = this;
                 FocusWindow();
             });
         }

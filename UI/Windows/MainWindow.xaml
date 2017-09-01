@@ -6,7 +6,7 @@
         xmlns:dx="clr-namespace:UI"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
-        Title="DirectX 11 Hook" Height="400" Width="525" ResizeMode="NoResize">
+        Title="DirectX 11 Hook" Height="400" Width="525" ResizeMode="CanMinimize">
     <Window.Resources>
         <dx:ColorConverter x:Key="ColorConverter"/>
     </Window.Resources>

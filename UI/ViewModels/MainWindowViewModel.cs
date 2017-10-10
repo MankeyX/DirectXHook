@@ -1,15 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Runtime.Remoting;
-using System.Threading;
 using Core.Data;
 using Core.Interop;
 using Core.Models;
-using EasyHook;
-using Hook;
 using UI.DirectX;
 using UI.Models;
 using UI.Remoting;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels.Ipc;
 using System.Threading;
 using System.Windows;
 using Core.Models;

@@ -18,21 +18,22 @@ namespace Hook.D3D11
 {
     public class D3D11Hook : IDirectXDeviceHook
     {
-        private readonly ServerInterfaceProxy _serverProxy;
         private readonly ServerInterface _server;
 
         private Shaders _shaders;
         private Device _device;
         private DrawIndexedHook _drawIndexedHook;
 
+        private readonly object _lock = new object();
+
         public D3D11Hook(ServerInterface server)
         {
             try
             {
-                _serverProxy = new ServerInterfaceProxy();
+                var serverProxy = new ServerInterfaceProxy();
                 _server = server;
-                _server.OnModelsReloaded += _serverProxy.ReloadModels;
-                _serverProxy.OnModelsReloaded += OnModelsReloaded;
+                _server.OnModelsReloaded += serverProxy.ReloadModels;
+                serverProxy.OnModelsReloaded += OnModelsReloaded;
             }
             catch (Exception e)
             {
@@ -43,7 +44,7 @@ namespace Hook.D3D11
 
         private void OnModelsReloaded(List<ModelInfo> models)
         {
-            lock (_drawIndexedHook.SavedModels)
+            lock (_lock)
             {
                 _drawIndexedHook.SavedModels = models;
                 _drawIndexedHook.SavedModels.Sort();
@@ -73,7 +74,10 @@ namespace Hook.D3D11
                     while (!presentHook.Initialized) { }
                 }
 
-                _shaders = new Shaders(_device);
+                lock (_lock)
+                {
+                    _shaders = new Shaders(_device);
+                }
 
                 using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(false, false), _shaders))
                 {

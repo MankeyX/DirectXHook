@@ -29,7 +29,7 @@ namespace Hook.D3D11
                 this);
 
             // This is not the SwapChain we're looking for...
-            swapChain?.Dispose();
+            swapChain.Dispose();
 
             _presentHook.Activate();
         }

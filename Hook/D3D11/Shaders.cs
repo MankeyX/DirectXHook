@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
+using Core.Models;
 using Hook.D3D11.Extensions;
 using SharpDX.Direct3D11;
 
@@ -39,22 +39,30 @@ namespace Hook.D3D11
 
         public PixelShader Get(Color color)
         {
-            try
+            lock (_createdShaders)
             {
-                lock (_createdShaders)
+                try
                 {
                     if (!_createdShaders.ContainsKey(color))
                         return _createdShaders[Color.White];
-
-                    return _createdShaders[color];
                 }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.ToString());
-            }
+                catch
+                {
+                    EnsureDefaultColors();
+                    return _createdShaders[Color.White];
+                }
 
-            return null;
+                return _createdShaders[color];
+            }
+        }
+
+        private void EnsureDefaultColors()
+        {
+            if (!_createdShaders.ContainsKey(Color.White))
+                _createdShaders.Add(Color.White, _device.GenerateShader(1f, 1f, 1f));
+
+            if (!_createdShaders.ContainsKey(Color.Red))
+                _createdShaders.Add(Color.Red, _device.GenerateShader(1f, 0f, 0f));
         }
 
         public void Dispose()

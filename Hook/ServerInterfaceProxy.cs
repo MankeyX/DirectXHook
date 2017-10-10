@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Hook.D3D11;
+using Core.Models;
 
 namespace Hook
 {
@@ -19,7 +19,7 @@ namespace Hook
             SaveFileLocationChanged?.Invoke(filename);
         }
 
-        public void ReloadModels(List<ModelParameters> models)
+        public void ReloadModels(List<ModelInfo> models)
         {
             OnModelsReloaded?.Invoke(models);
         }

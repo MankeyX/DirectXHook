@@ -1,16 +1,16 @@
 ﻿using System.ComponentModel;
 using System.Windows;
-using Hook.D3D11;
+using Core.Models;
 
 namespace UI.Windows
 {
-    public delegate void OnSaveModelEvent(ModelParameters model);
+    public delegate void OnSaveModelEvent(ModelInfo model);
 
     public partial class SaveModelWindow
     {
         public event OnSaveModelEvent OnSaveModel;
 
-        private ModelParameters _model;
+        private ModelInfo _model;
 
         public SaveModelWindow()
         {
@@ -26,7 +26,7 @@ namespace UI.Windows
             Visibility = Visibility.Hidden;
         }
 
-        public void Show(ModelParameters model)
+        public void Show(ModelInfo model)
         {
             _model = model;
             LabelIndexCount.Content = model.IndexCount;

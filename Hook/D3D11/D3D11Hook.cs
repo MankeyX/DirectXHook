@@ -4,6 +4,8 @@ using System.Linq;
 using System.Runtime.Remoting;
 using System.Threading;
 using System.Windows.Forms;
+using Core.Interop;
+using Core.Models;
 using Hook.D3D11.Extensions;
 using Hook.Infrastructure;
 using SharpDX.Direct3D;
@@ -34,12 +36,12 @@ namespace Hook.D3D11
             }
             catch (Exception e)
             {
-                _server.Message(e.ToString(), new byte[] { 255, 0, 0 });
+                _server.Message(e.ToString());
                 throw;
             }
         }
 
-        private void OnModelsReloaded(List<ModelParameters> models)
+        private void OnModelsReloaded(List<ModelInfo> models)
         {
             lock (_drawIndexedHook.SavedModels)
             {
@@ -56,11 +58,11 @@ namespace Hook.D3D11
                 DeviceContext deviceContext = null;
 
                 if (!InitializeSwapChain(out var swapChain))
-                    _server.Message("Failed to create swap chain", new byte[] { 255, 0, 0 });
+                    _server.Message("Failed to create swap chain");
                 else
-                    _server.Message("Swap chain created successfully!", new byte[] { 0, 255, 0 });
+                    _server.Message("Swap chain created successfully!");
 
-                _server.Message("Hooking Present()...", null);
+                _server.Message("Hooking Present()...");
                 using (var presentHook = new PresentHook(swapChain))
                 {
                     presentHook.OnInitialized += (eDevice, eDeviceContext) =>
@@ -76,7 +78,7 @@ namespace Hook.D3D11
                 using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(false, false), _shaders))
                 {
                     _server.NotifyHookStarted();
-                    _server.Message("Ready for input...", null);
+                    _server.Message("Ready for input...");
 
                     while (true)
                     {
@@ -97,7 +99,7 @@ namespace Hook.D3D11
 
                         if (Input.GetKey(Keys.End))
                         {
-                            _server.Message($"Logger enabled: {_drawIndexedHook.ToggleLogger()}", null);
+                            _server.Message($"Logger enabled: {_drawIndexedHook.ToggleLogger()}");
                             Thread.Sleep(1000);
                         }
                         if (Input.GetKey(Keys.Insert))
@@ -121,7 +123,7 @@ namespace Hook.D3D11
             }
             catch (Exception e)
             {
-                _server.Message(e.ToString(), new byte[] { 255, 0, 0 });
+                _server.Message(e.ToString());
             }
         }
 

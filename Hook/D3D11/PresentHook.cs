@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Hook.Infrastructure;
+using Core.Memory;
 using SharpDX;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
@@ -24,7 +24,7 @@ namespace Hook.D3D11
         public PresentHook(CppObject swapChain)
         {
             _presentHook = new FunctionHook<Present>(
-                Memory.GetVtableAddress(swapChain.NativePointer, (int)VTableIndices.DxgiSwapChain.Present),
+                VirtualTableAddress.GetVtableAddress(swapChain.NativePointer, (int)VirtualTableIndices.DxgiSwapChain.Present),
                 new Present(OnPresent),
                 this);
 

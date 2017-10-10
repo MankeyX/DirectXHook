@@ -1,8 +1,8 @@
-﻿namespace Hook.Infrastructure
+﻿namespace Core.Memory
 {
-    public class VTableIndices
+    public class VirtualTableIndices
     {
-        public enum Direct3DDevice9 : short
+        public enum Direct3DDevice9
         {
             QueryInterface = 0,
             AddRef,

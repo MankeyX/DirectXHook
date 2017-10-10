@@ -1,10 +1,12 @@
 ﻿using System;
 
-namespace Hook.D3D11
+namespace Core.Models
 {
     [Serializable]
     public class Color
     {
+        private const float AntiGlowValue = 25f;
+
         public static Color White = new Color(255, 255, 255);
         public static Color Red = new Color(255, 0, 0);
 
@@ -12,10 +14,10 @@ namespace Hook.D3D11
         public byte G { get; set; }
         public byte B { get; set; }
 
-        // Divide by 25 to combat glow post-process effect.
-        public float Rf => (R / 255f) / 25f;
-        public float Gf => (G / 255f) / 25f;
-        public float Bf => (B / 255f) / 25f;
+        // Divide by our anti-glow value to combat the common glow/bloom post-process effect.
+        public float Rf => (R / 255f) / AntiGlowValue;
+        public float Gf => (G / 255f) / AntiGlowValue;
+        public float Bf => (B / 255f) / AntiGlowValue;
 
         public Color() { }
         public Color(byte r, byte g, byte b)

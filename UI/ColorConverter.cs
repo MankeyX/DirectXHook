@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Windows.Data;
-using Hook.D3D11;
+using Core.Models;
 
 namespace UI
 {

@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
-namespace Hook
+namespace Core.Interop
 {
     public class Input
     {

@@ -4,62 +4,75 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:dx="clr-namespace:UI"
+        xmlns:core="clr-namespace:Core;assembly=Core..NETStandard,Version=v2.0"
+        xmlns:vm="clr-namespace:UI.ViewModels"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
         Title="DirectX 11 Hook" Height="400" Width="525" ResizeMode="CanMinimize">
     <Window.Resources>
         <dx:ColorConverter x:Key="ColorConverter"/>
     </Window.Resources>
+    <Window.DataContext>
+        <vm:MainWindowViewModel />
+    </Window.DataContext>
     <Grid>
-        <TabControl Name="Tabs" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TabItem Name="TabInject" Header="Inject">
+        <TabControl Name="Tabs" SelectedIndex="{Binding TabSelectedIndex}"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabItem Name="TabInject" Header="Inject" IsEnabled="{Binding TabInjectEnabled}">
                 <StackPanel Orientation="Horizontal">
                     <ListView x:Name="ProcessList" Width="425"
-                              Margin="10" VerticalAlignment="Stretch"
-                              SelectionChanged="ProcessList_OnSelectionChanged">
+                              Margin="10" VerticalAlignment="Stretch" 
+                              ItemsSource="{Binding DxProcessMonitor.Processes}"
+                              SelectedItem="{Binding SelectedProcess}">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Header="Process Name" DisplayMemberBinding="{Binding ProcessName}"
+                                <GridViewColumn Header="Process Name" 
+                                                DisplayMemberBinding="{Binding ProcessName}"
                                                 Width="300"/>
-                                <GridViewColumn Header="Process ID" Width="90" DisplayMemberBinding="{Binding Id}" />
+                                <GridViewColumn Header="Process ID" 
+                                                DisplayMemberBinding="{Binding Id}"
+                                                Width="90" />
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <Button x:Name="ButtonInject" Content="Inject"  IsEnabled="False"
+                    <Button x:Name="ButtonInject" Content="Inject" 
                             VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                            Padding="10,5" Margin="0,0,10,10" Click="ButtonInject_Click"/>
+                            Padding="10,5" Margin="0,0,10,10" 
+                            Command="{Binding InjectCommand}"/>
                 </StackPanel>
             </TabItem>
-            <TabItem Name="TabEditModels" Header="Edit Saved Models" IsEnabled="false">
+            <TabItem Name="TabEditModels" Header="Edit Saved Models" IsEnabled="{Binding TabEditModelsEnabled}">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <ListView Name="SavedModelsList" Margin="10" VerticalAlignment="Stretch" Width="390"
-                          d:DataContext="{d:DesignData ModelParameters}">
+                    <ListView Name="SavedModelsList" Margin="10" 
+                              VerticalAlignment="Stretch" Width="390"
+                              ItemsSource="{Binding SavedModels}">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="30">
                                     <GridViewColumn.Header>
-                                        <CheckBox Name="CheckBoxEnable" Checked="CheckBoxEnable_Checked" Unchecked="CheckBoxEnable_Checked" />
+                                        <CheckBox Name="CheckBoxEnable" Command="{Binding ToggleModelsCommand}" />
                                     </GridViewColumn.Header>
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <CheckBox IsChecked="{Binding Enabled}" IsThreeState="False"
-                                                  d:DataContext="{d:DesignData ModelParameters}"/>
+                                            <CheckBox IsChecked="{Binding Enabled}"  IsThreeState="False" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150"/>
-                                <GridViewColumn Header="Color">
+                                <GridViewColumn Header="Color" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <xctk:ColorPicker SelectedColor="{Binding Color, Converter={StaticResource ColorConverter}}" 
-                                                          d:DataContext="{d:DesignData ModelParameters}"/>
+                                            <xctk:ColorPicker SelectedColor="{Binding Color, Converter={StaticResource ColorConverter}}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <Button Name="ButtonSaveChanges" VerticalAlignment="Bottom" HorizontalAlignment="Right" Padding="10 5" Margin="0 0 10 10" Click="ButtonSaveChanges_Click">
+                    <Button Name="ButtonSaveChanges" 
+                            VerticalAlignment="Bottom" HorizontalAlignment="Right" 
+                            Padding="10 5" Margin="0 0 10 10"
+                            Command="{Binding SaveChangesCommand}">
                         Save Changes
                     </Button>
                 </StackPanel>
@@ -68,7 +81,7 @@
                 <StackPanel HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <ScrollViewer VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Height="340">
                         <Border BorderBrush="LightGray" BorderThickness="1" Margin="10">
-                            <TextBlock Name="TextLog" Padding="5" TextWrapping="Wrap" VerticalAlignment="Stretch" />
+                            <TextBlock Name="TextLog" Padding="5" TextWrapping="Wrap" VerticalAlignment="Stretch" Text="{Binding Log}" />
                         </Border>
                     </ScrollViewer>
                 </StackPanel>

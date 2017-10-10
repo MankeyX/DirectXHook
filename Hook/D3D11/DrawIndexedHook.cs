@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Core.Memory;
+using Core.Models;
 using Hook.D3D11.Extensions;
-using Hook.Infrastructure;
 using SharpDX.Direct3D11;
 
 namespace Hook.D3D11
@@ -12,7 +13,7 @@ namespace Hook.D3D11
         private readonly DeviceContext _deviceContext;
         private readonly FunctionHook<DrawIndexed> _drawIndexedHook;
         private readonly DepthStencilState _depthDisabledState;
-        private readonly List<ModelParameters> _modelsInScene;
+        private readonly List<ModelInfo> _modelsInScene;
         private readonly Shaders _shaders;
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
@@ -23,18 +24,18 @@ namespace Hook.D3D11
 
         public bool OnlyRenderSavedModels { get; private set; }
         public bool IsLoggerEnabled { get; private set; }
-        public List<ModelParameters> SavedModels { get; set; }
+        public List<ModelInfo> SavedModels { get; set; }
 
         public DrawIndexedHook(DeviceContext deviceContext, DepthStencilState depthDisabledState, Shaders shaders)
         {
             _deviceContext = deviceContext;
             _depthDisabledState = depthDisabledState;
             _shaders = shaders;
-            _modelsInScene = new List<ModelParameters>();
-            SavedModels = new List<ModelParameters>();
+            _modelsInScene = new List<ModelInfo>();
+            SavedModels = new List<ModelInfo>();
 
             _drawIndexedHook = new FunctionHook<DrawIndexed>(
-                Memory.GetVtableAddress(_deviceContext.NativePointer, (int)VTableIndices.D3D11DeviceContext.DrawIndexed),
+                VirtualTableAddress.GetVtableAddress(_deviceContext.NativePointer, (int)VirtualTableIndices.D3D11DeviceContext.DrawIndexed),
                 new DrawIndexed(OnDrawIndexed),
                 this);
 
@@ -94,19 +95,19 @@ namespace Hook.D3D11
             _deviceContext.OutputMerger.SetDepthStencilState(null);
         }
 
-        private ModelParameters GetCurrentItem(int indexCount)
+        private ModelInfo GetCurrentItem(int indexCount)
         {
-            return _deviceContext.GetModelParameters(indexCount);
+            return _deviceContext.GetModelInfo(indexCount);
         }
 
-        private bool IsCurrentModel(ModelParameters currentModel, int currentIndex)
+        private bool IsCurrentModel(ModelInfo currentModel, int currentIndex)
         {
             return
                 _modelsInScene[currentIndex] != null &&
                 _modelsInScene[currentIndex].Equals(currentModel);
         }
         
-        private bool IsSavedModel(ModelParameters model, out int savedItemIndex)
+        private bool IsSavedModel(ModelInfo model, out int savedItemIndex)
         {
             return (savedItemIndex = SavedModels.BinarySearch(model)) >= 0;
         }
@@ -147,7 +148,7 @@ namespace Hook.D3D11
             OnlyRenderSavedModels = enabled;
         }
 
-        public ModelParameters GetSelectedModel()
+        public ModelInfo GetSelectedModel()
         {
             return _modelsInScene[_currentIndex];
         }

@@ -1,12 +1,13 @@
-﻿using SharpDX.Direct3D11;
-using SharpDX.DXGI;
+﻿using Core.Models;
+using SharpDX.Direct3D11;
 using Buffer = SharpDX.Direct3D11.Buffer;
 
 namespace Hook.D3D11.Extensions
 {
     public static class DeviceContextExtensions
     {
-        public static ModelParameters GetModelParameters(this DeviceContext deviceContext, int indexCount)
+        // TODO: Check if we can dispose buffers after getting them
+        public static ModelInfo GetModelInfo(this DeviceContext deviceContext, int indexCount)
         {
             var vertexBuffers = new Buffer[1];
             var strides = new int[1];
@@ -17,20 +18,20 @@ namespace Hook.D3D11.Extensions
             var resources = deviceContext.PixelShader.GetShaderResources(0, 1);
 
             if (resources[0] == null)
-                return new ModelParameters(
+                return new ModelInfo(
                     indexCount,
                     buffer.Description.SizeInBytes,
                     strides[0],
                     vertexBuffers[0].Description.SizeInBytes,
-                    Format.A8P8,
+                    0,
                     Color.White);
 
-            return new ModelParameters(
+            return new ModelInfo(
                 indexCount,
                 buffer.Description.SizeInBytes,
                 strides[0],
                 vertexBuffers[0].Description.SizeInBytes,
-                resources[0].Description.Format,
+                (int)resources[0].Description.Format,
                 Color.White);
         }
 

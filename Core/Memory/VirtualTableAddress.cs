@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace Hook
+namespace Core.Memory
 {
-    public class Memory
+    public class VirtualTableAddress
     {
         public static IntPtr GetVtableAddress(IntPtr pointer, int index)
         {

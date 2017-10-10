@@ -1,23 +1,38 @@
 ﻿using System;
-using SharpDX.DXGI;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using Core.Annotations;
 
-namespace Hook.D3D11
+namespace Core.Models
 {
     [Serializable]
-    public class ModelParameters : IComparable<ModelParameters>
+    public class ModelInfo : IComparable<ModelInfo>, INotifyPropertyChanged
     {
         public string Name { get; set; }
         public int IndexCount { get; set; }
         public int IndexByteWidth { get; set; }
         public int Stride { get; set; }
         public int VertexByteWidth { get; set; }
-        public Format Format { get; set; }
-        public bool Enabled { get; set; }
-        public Color Color { get; set; } = new Color(100, 100, 100);
+        public int Format { get; set; }
+        public Color Color { get; set; }
 
-        public ModelParameters() { }
-        public ModelParameters(int indexCount, int indexByteWidth, int stride, 
-                               int vertexByteWidth, Format format, Color color)
+        private bool _enabled;
+        public bool Enabled
+        {
+            get
+            {
+                return _enabled;
+            }
+            set
+            {
+                _enabled = value;
+                NotifyPropertyChanged();
+            }
+        }
+        
+        public ModelInfo() { }
+        public ModelInfo(int indexCount, int indexByteWidth, int stride, 
+                               int vertexByteWidth, int format, Color color)
         {
             IndexCount = indexCount;
             IndexByteWidth = indexByteWidth;
@@ -29,7 +44,7 @@ namespace Hook.D3D11
 
         public override bool Equals(object obj)
         {
-            var modelParameters = obj as ModelParameters;
+            var modelParameters = obj as ModelInfo;
 
             return modelParameters != null 
                 && modelParameters.GetHashCode() == GetHashCode();
@@ -59,7 +74,7 @@ namespace Hook.D3D11
                    $"Format: {Format}";
         }
 
-        public int CompareTo(ModelParameters other)
+        public int CompareTo(ModelInfo other)
         {
             if (ReferenceEquals(this, other))
                 return 0;
@@ -84,5 +99,16 @@ namespace Hook.D3D11
             
             return Format.CompareTo(other.Format);
         }
+
+        #region INotifyPropertyChanged
+        [field:NonSerialized]
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        [NotifyPropertyChangedInvocator]
+        protected virtual void NotifyPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+        #endregion
     }
 }

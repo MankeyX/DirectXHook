@@ -12,6 +12,7 @@ using EasyHook;
 using Hook;
 using UI.DirectX;
 using UI.Models;
+using UI.Remoting;
 using UI.Windows;
 
 namespace UI.ViewModels
@@ -96,13 +97,12 @@ namespace UI.ViewModels
             }
         }
 
-        private const string Filename = "savedModels"; // Repository
-
         public RelayCommand InjectCommand { get; }
         public RelayCommand SaveChangesCommand { get; }
         public RelayCommand ToggleModelsCommand { get; }
         public DxProcessMonitor DxProcessMonitor { get; }
         public MainWindowModel Model { get; }
+        public HookManager HookManager { get; }
         public IModelInfoRepository ModelInfoRepository { get; }
 
         public MainWindowViewModel()
@@ -123,11 +123,11 @@ namespace UI.ViewModels
 
             Model.SaveModelWindow = new SaveModelWindow();
             Model.SaveModelWindow.OnSaveModel += OnSaveModel;
-
-            Model.ServerInterface = new ServerInterface();
-            Model.ServerInterface.MessageRecieved += WriteToLog;
-            Model.ServerInterface.HookStarted += HookStarted;
-            Model.ServerInterface.SaveModelRequestRecieved += SaveModelRequestRecieved;
+            
+            HookManager = new HookManager();
+            HookManager.ServerInterface.MessageRecieved += WriteToLog;
+            HookManager.ServerInterface.HookStarted += HookStarted;
+            HookManager.ServerInterface.SaveModelRequestRecieved += SaveModelRequestRecieved;
 
             WriteToLog("Controls:\n" +
                        "End = Toggle Model Logger\n" +
@@ -147,26 +147,12 @@ namespace UI.ViewModels
 
         private void Inject()
         {
-            string channelName = null;
-
-            Model.Server = RemoteHooking.IpcCreateServer(ref channelName, WellKnownObjectMode.Singleton, Model.ServerInterface);
-
-            var injectionLibrary = Path.Combine(Directory.GetCurrentDirectory(), "Hook.dll");
-
             try
             {
                 WriteToLog("Attempting to inject DLL into process...");
 
-                RemoteHooking.Inject(
-                    SelectedProcess.Id,
-                    injectionLibrary,
-                    injectionLibrary,
-                    channelName
-                    );
-
+                HookManager.Inject(SelectedProcess.Id);
                 DxProcessMonitor.Stop();
-
-                Thread.Sleep(1000);
 
                 TabEditModelsEnabled = true;
                 TabInjectEnabled = false;
@@ -187,7 +173,7 @@ namespace UI.ViewModels
             WriteToLog($"Saving model...\n{modelInfo}\n");
             Dispatcher.Invoke(() =>
                 Model.SaveModelWindow.Show(modelInfo));
-            //_saveModelWindow.Owner = this;
+
             FocusWindow();
         }
 
@@ -195,7 +181,8 @@ namespace UI.ViewModels
         {
             Dispatcher.Invoke(() =>
                 SavedModels = ModelInfoRepository.Get());
-            Model.ServerInterface.ReloadModels(SavedModels.Where(x => x.Enabled).ToList());
+
+            HookManager.ReloadModels(SavedModels);
         }
 
         private void OnSaveModel(ModelInfo modelInfo)
@@ -203,7 +190,8 @@ namespace UI.ViewModels
             ModelInfoRepository.Save(modelInfo);
             Dispatcher.Invoke(() =>
                 SavedModels = ModelInfoRepository.Get());
-            Model.ServerInterface.ReloadModels(SavedModels.Where(x => x.Enabled).ToList());
+
+            HookManager.ReloadModels(SavedModels);
             WriteToLog("Model info saved successfully!");
         }
 
@@ -215,7 +203,7 @@ namespace UI.ViewModels
         private void SaveChanges()
         {
             ModelInfoRepository.Save(SavedModels);
-            Model.ServerInterface.ReloadModels(SavedModels.Where(x => x.Enabled).ToList());
+            HookManager.ReloadModels(SavedModels);
         }
 
         private bool _toggleModels;

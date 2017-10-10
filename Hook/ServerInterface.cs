@@ -5,7 +5,6 @@ using Core.Models;
 namespace Hook
 {
     public delegate void MessageRecievedEvent(string message);
-    public delegate void SaveFileLocationRecievedEvent(string filename);
     public delegate void HookInitializedEvent();
     public delegate void SaveModelRequestRecievedEvent(ModelInfo model);
     public delegate void OnModelsReloadedEvent(List<ModelInfo> models);
@@ -13,7 +12,6 @@ namespace Hook
     public class ServerInterface : MarshalByRefObject
     {
         public event MessageRecievedEvent MessageRecieved;
-        public event SaveFileLocationRecievedEvent SaveFileLocationRecieved;
         public event HookInitializedEvent HookStarted;
         public event SaveModelRequestRecievedEvent SaveModelRequestRecieved;
         public event OnModelsReloadedEvent OnModelsReloaded;
@@ -21,11 +19,6 @@ namespace Hook
         public void Message(string message)
         {
             MessageRecieved?.Invoke(message);
-        }
-
-        public void ChangeSaveFileLocation(string filename)
-        {
-            SaveFileLocationRecieved?.Invoke(filename);
         }
 
         public void NotifyHookStarted()

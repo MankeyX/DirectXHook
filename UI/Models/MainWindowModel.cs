@@ -17,6 +17,5 @@ namespace UI.Models
         public ServerInterface ServerInterface { get; set; } // Communications
         public IntPtr WindowHandle { get; set; }
         public SaveModelWindow SaveModelWindow { get; set; }
-        public string SaveFilePath { get; set; } // Repository
     }
 }

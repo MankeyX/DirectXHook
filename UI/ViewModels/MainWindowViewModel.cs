@@ -5,8 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Remoting;
 using System.Threading;
+using Core.Data;
 using Core.Interop;
-using Core.IO;
 using Core.Models;
 using EasyHook;
 using Hook;
@@ -103,6 +103,7 @@ namespace UI.ViewModels
         public RelayCommand ToggleModelsCommand { get; }
         public DxProcessMonitor DxProcessMonitor { get; }
         public MainWindowModel Model { get; }
+        public IModelInfoRepository ModelInfoRepository { get; }
 
         public MainWindowViewModel()
         {
@@ -112,8 +113,8 @@ namespace UI.ViewModels
             SaveChangesCommand = new RelayCommand(SaveChanges);
             ToggleModelsCommand = new RelayCommand(ToggleModels);
 
-            Model.SaveFilePath = Path.Combine(Directory.GetCurrentDirectory(), Filename);
-            SavedModels = SaveLoad.Load(Model.SaveFilePath);
+            ModelInfoRepository = new ModelInfoRepository();
+            SavedModels = ModelInfoRepository.Get();
 
             DxProcessMonitor = new DxProcessMonitor(Dispatcher);
             DxProcessMonitor.Start();
@@ -180,7 +181,7 @@ namespace UI.ViewModels
 
         private void SaveModelRequestRecieved(ModelInfo modelInfo)
         {
-            if (SaveLoad.Load(Model.SaveFilePath).Contains(modelInfo))
+            if (ModelInfoRepository.Get().Contains(modelInfo))
                 return;
             
             WriteToLog($"Saving model...\n{modelInfo}\n");
@@ -193,15 +194,15 @@ namespace UI.ViewModels
         private void HookStarted()
         {
             Dispatcher.Invoke(() =>
-                SavedModels = SaveLoad.Load(Model.SaveFilePath));
+                SavedModels = ModelInfoRepository.Get());
             Model.ServerInterface.ReloadModels(SavedModels.Where(x => x.Enabled).ToList());
         }
 
         private void OnSaveModel(ModelInfo modelInfo)
         {
-            SaveLoad.Save(Model.SaveFilePath, modelInfo);
+            ModelInfoRepository.Save(modelInfo);
             Dispatcher.Invoke(() =>
-                SavedModels = SaveLoad.Load(Model.SaveFilePath));
+                SavedModels = ModelInfoRepository.Get());
             Model.ServerInterface.ReloadModels(SavedModels.Where(x => x.Enabled).ToList());
             WriteToLog("Model info saved successfully!");
         }
@@ -213,7 +214,7 @@ namespace UI.ViewModels
 
         private void SaveChanges()
         {
-            SaveLoad.Save(Model.SaveFilePath, SavedModels);
+            ModelInfoRepository.Save(SavedModels);
             Model.ServerInterface.ReloadModels(SavedModels.Where(x => x.Enabled).ToList());
         }
 

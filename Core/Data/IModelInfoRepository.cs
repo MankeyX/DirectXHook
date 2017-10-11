@@ -6,7 +6,6 @@ namespace Core.Data
     public interface IModelInfoRepository
     {
         List<ModelInfo> Get();
-        void Save(ModelInfo modelInfo);
         void Save(List<ModelInfo> models);
     }
 }

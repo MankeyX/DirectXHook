@@ -7,15 +7,25 @@ namespace Core.Models
     [Serializable]
     public class ModelInfo : IComparable<ModelInfo>, INotifyPropertyChanged
     {
-        public string Name { get; set; }
+        private string _name;
+        public string Name
+        {
+            get { return _name; }
+            set
+            {
+                _name = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         public int IndexCount { get; set; }
         public int IndexByteWidth { get; set; }
         public int Stride { get; set; }
         public int VertexByteWidth { get; set; }
         public int Format { get; set; }
-        public Color Color { get; set; }
+        public Color Color { get; set; } = new Color(0, 0, 100);
 
-        private bool _enabled;
+        private bool _enabled = true;
         public bool Enabled
         {
             get

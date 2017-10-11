@@ -1,17 +1,20 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Core.Data;
 using Core.Interop;
 using Core.Models;
+using GalaSoft.MvvmLight;
+using GalaSoft.MvvmLight.CommandWpf;
+using GalaSoft.MvvmLight.Messaging;
+using GalaSoft.MvvmLight.Threading;
 using UI.DirectX;
 using UI.Models;
 using UI.Remoting;
-using UI.Windows;
 
-namespace UI.ViewModels
+namespace UI.ViewModel
 {
-    public class MainWindowViewModel : ViewModelBase
+    public class MainViewModel : ViewModelBase
     {
         public string Log
         {
@@ -19,7 +22,7 @@ namespace UI.ViewModels
             set
             {
                 Model.Log = value;
-                NotifyPropertyChanged();
+                RaisePropertyChanged();
             }
         }
 
@@ -32,7 +35,7 @@ namespace UI.ViewModels
             set
             {
                 Model.SavedModels = value;
-                NotifyPropertyChanged();
+                RaisePropertyChanged();
             }
         }
 
@@ -46,10 +49,10 @@ namespace UI.ViewModels
             set
             {
                 _tabSelectedIndex = value;
-                NotifyPropertyChanged();
+                RaisePropertyChanged();
             }
         }
-        
+
         public Process SelectedProcess
         {
             get
@@ -59,6 +62,7 @@ namespace UI.ViewModels
             set
             {
                 Model.SelectedProcess = value;
+                RaisePropertyChanged();
                 InjectCommand.RaiseCanExecuteChanged();
             }
         }
@@ -73,7 +77,7 @@ namespace UI.ViewModels
             set
             {
                 _tabInjectEnabled = value;
-                NotifyPropertyChanged();
+                RaisePropertyChanged();
             }
         }
 
@@ -87,7 +91,7 @@ namespace UI.ViewModels
             set
             {
                 _tabEditModelsEnabled = value;
-                NotifyPropertyChanged();
+                RaisePropertyChanged();
             }
         }
 
@@ -99,25 +103,22 @@ namespace UI.ViewModels
         public HookManager HookManager { get; }
         public IModelInfoRepository ModelInfoRepository { get; }
 
-        public MainWindowViewModel()
+        public MainViewModel()
         {
             Model = new MainWindowModel();
+            ModelInfoRepository = new ModelInfoRepository();
+            DxProcessMonitor = new DxProcessMonitor();
 
             InjectCommand = new RelayCommand(Inject, () => SelectedProcess != null);
             SaveChangesCommand = new RelayCommand(SaveChanges);
             ToggleModelsCommand = new RelayCommand(ToggleModels);
-
-            ModelInfoRepository = new ModelInfoRepository();
-            SavedModels = ModelInfoRepository.Get();
-
-            DxProcessMonitor = new DxProcessMonitor(Dispatcher);
+            
             DxProcessMonitor.Start();
 
             Model.WindowHandle = Process.GetCurrentProcess().MainWindowHandle;
 
-            Model.SaveModelWindow = new SaveModelWindow();
-            Model.SaveModelWindow.OnSaveModel += OnSaveModel;
-            
+            Messenger.Default.Register<NotificationMessage<ModelInfo>>(this, OnSaveModel);
+
             HookManager = new HookManager();
             HookManager.ServerInterface.MessageRecieved += WriteToLog;
             HookManager.ServerInterface.HookStarted += HookStarted;
@@ -132,7 +133,7 @@ namespace UI.ViewModels
                        "\tInsert = Save Current Model\n" +
                        "Numpad 0 = Render Only Saved Models\n");
         }
-        
+
         private void FocusWindow()
         {
             WindowManagement.ShowWindow(SelectedProcess.MainWindowHandle, WindowOptions.ForceMinimize);
@@ -163,29 +164,39 @@ namespace UI.ViewModels
         {
             if (ModelInfoRepository.Get().Contains(modelInfo))
                 return;
-            
+
             WriteToLog($"Saving model...\n{modelInfo}\n");
-            Dispatcher.Invoke(() =>
-                Model.SaveModelWindow.Show(modelInfo));
+            DispatcherHelper.RunAsync(() =>
+            {
+                try
+                {
+                    Messenger.Default.Send(modelInfo);
+                }
+                catch (Exception e)
+                {
+                    WriteToLog(e.ToString());
+                }
+            });
 
             FocusWindow();
         }
 
         private void HookStarted()
         {
-            Dispatcher.Invoke(() =>
-                SavedModels = ModelInfoRepository.Get());
-
+            SavedModels = ModelInfoRepository.Get();
             HookManager.ReloadModels(SavedModels);
         }
 
-        private void OnSaveModel(ModelInfo modelInfo)
+        private void OnSaveModel(NotificationMessage<ModelInfo> message)
         {
-            ModelInfoRepository.Save(modelInfo);
-            Dispatcher.Invoke(() =>
-                SavedModels = ModelInfoRepository.Get());
+            if (message.Notification != "Save")
+                return;
+            
+            SavedModels.Add(message.Content);
+            SaveChanges();
+            
+            SavedModels = ModelInfoRepository.Get();
 
-            HookManager.ReloadModels(SavedModels);
             WriteToLog("Model info saved successfully!");
         }
 

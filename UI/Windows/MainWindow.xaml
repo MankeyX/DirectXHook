@@ -4,17 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:dx="clr-namespace:UI"
-        xmlns:core="clr-namespace:Core;assembly=Core..NETStandard,Version=v2.0"
-        xmlns:vm="clr-namespace:UI.ViewModels"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         mc:Ignorable="d"
-        Title="DirectX 11 Hook" Height="400" Width="525" ResizeMode="CanMinimize">
+        Title="DirectX 11 Hook" Height="400" Width="525" ResizeMode="CanMinimize"
+        DataContext="{Binding Main, Source={StaticResource Locator}}">
     <Window.Resources>
         <dx:ColorConverter x:Key="ColorConverter"/>
     </Window.Resources>
-    <Window.DataContext>
-        <vm:MainWindowViewModel />
-    </Window.DataContext>
     <Grid>
         <TabControl Name="Tabs" SelectedIndex="{Binding TabSelectedIndex}"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -62,7 +58,7 @@
                                 <GridViewColumn Header="Color" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>
-                                            <xctk:ColorPicker SelectedColor="{Binding Color, Converter={StaticResource ColorConverter}}" />
+                                            <xctk:ColorPicker SelectedColor="{Binding Color, Converter={StaticResource ColorConverter}}" Width="135" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>

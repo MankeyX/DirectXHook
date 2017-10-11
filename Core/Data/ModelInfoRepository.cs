@@ -37,18 +37,6 @@ namespace Core.Data
             }
         }
 
-        public void Save(ModelInfo modelInfo)
-        {
-            var savedModels = Get();
-
-            if (savedModels.Contains(modelInfo))
-                return;
-
-            savedModels.Add(modelInfo);
-
-            Save(savedModels);
-        }
-
         public void Save(List<ModelInfo> models)
         {
             using (var fileStream = new FileStream(_filePath, FileMode.Create))

@@ -22,20 +22,9 @@ namespace Hook.D3D11.Extensions
         {
             var shaderText = Encoding.ASCII.GetBytes(
 $@"
-struct VS_OUT
+float4 main() : SV_Target
 {{
-    float4 position : SV_POSITION;
-    float4 Color : COLOR0;
-}};
-
-float4 main(VS_OUT input) : SV_Target
-{{
-	float4 fake;
-    fake.r = {r};
-    fake.g = {g};
-    fake.b = {b};
-    fake.a = 0.7f;
-    return fake;
+    return float4({r},{g},{b},0.7f);
 }}");
 
             using (var pixelShaderBytecode = ShaderBytecode.Compile(shaderText, "main", "ps_4_0"))

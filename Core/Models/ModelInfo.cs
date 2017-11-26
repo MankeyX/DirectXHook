@@ -10,7 +10,7 @@ namespace Core.Models
         private string _name;
         public string Name
         {
-            get { return _name; }
+            get => _name;
             set
             {
                 _name = value;
@@ -18,20 +18,17 @@ namespace Core.Models
             }
         }
 
-        public int IndexCount { get; set; }
-        public int IndexByteWidth { get; set; }
-        public int Stride { get; set; }
-        public int VertexByteWidth { get; set; }
-        public int Format { get; set; }
+        public int IndexCount { get; }
+        public int IndexByteWidth { get; }
+        public int Stride { get; }
+        public int VertexByteWidth { get; }
+        public int Format { get; }
         public Color Color { get; set; } = new Color(0, 0, 100);
 
         private bool _enabled = true;
         public bool Enabled
         {
-            get
-            {
-                return _enabled;
-            }
+            get => _enabled;
             set
             {
                 _enabled = value;
@@ -53,9 +50,7 @@ namespace Core.Models
 
         public override bool Equals(object obj)
         {
-            var modelParameters = obj as ModelInfo;
-
-            return modelParameters != null 
+            return obj is ModelInfo modelParameters 
                 && modelParameters.GetHashCode() == GetHashCode();
         }
 

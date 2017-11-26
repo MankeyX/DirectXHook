@@ -28,8 +28,8 @@ namespace UI.Remoting
 
                 RemoteHooking.IpcCreateServer(ref channelName, WellKnownObjectMode.Singleton, ServerInterface);
 
-                var injectionLibrary = Path.Combine(Directory.GetCurrentDirectory(), "Hook.dll"); // TODO: Change so this can support DX9 and DX11 etc...
-
+                var injectionLibrary = Path.Combine(Directory.GetCurrentDirectory(), "Hook.dll");
+                
                 RemoteHooking.Inject(
                     processId,
                     injectionLibrary,

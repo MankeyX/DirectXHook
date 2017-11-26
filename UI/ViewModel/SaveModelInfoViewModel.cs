@@ -10,7 +10,7 @@ namespace UI.ViewModel
         private ModelInfo _model;
         public ModelInfo Model
         {
-            get { return _model; }
+            get => _model;
             set
             {
                 _model = value;
@@ -20,7 +20,7 @@ namespace UI.ViewModel
 
         public string ModelName
         {
-            get { return Model.Name; }
+            get => Model.Name;
             set
             {
                 Model.Name = value;

@@ -10,6 +10,8 @@ namespace Hook.D3D11
 {
     public class DrawIndexedHook : IDisposable
     {
+        private const int IndexByteWidthDivider = 100;
+
         private readonly DeviceContext _deviceContext;
         private readonly FunctionHook<DrawIndexed> _drawIndexedHook;
         private readonly DepthStencilState _depthDisabledState;
@@ -57,7 +59,7 @@ namespace Hook.D3D11
 
             if (IsLoggerEnabled)
             {
-                if (_selectedByteWidth == _deviceContext.GetIndexByteWidth() / 500)
+                if (_selectedByteWidth == _deviceContext.GetIndexByteWidth() / IndexByteWidthDivider)
                 {
                     if (!_modelsInScene.Contains(currentItem))
                         _modelsInScene.Add(currentItem);

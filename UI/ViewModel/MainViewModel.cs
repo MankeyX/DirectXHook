@@ -18,7 +18,7 @@ namespace UI.ViewModel
     {
         public string Log
         {
-            get { return Model.Log; }
+            get => Model.Log;
             set
             {
                 Model.Log = value;
@@ -28,10 +28,7 @@ namespace UI.ViewModel
 
         public List<ModelInfo> SavedModels
         {
-            get
-            {
-                return Model.SavedModels;
-            }
+            get => Model.SavedModels;
             set
             {
                 Model.SavedModels = value;
@@ -39,13 +36,21 @@ namespace UI.ViewModel
             }
         }
 
+        private ModelInfo _selectedModel;
+        public ModelInfo SelectedModel
+        {
+            get => _selectedModel;
+            set
+            {
+                _selectedModel = value;
+                RaisePropertyChanged();
+            }
+        }
+
         private int _tabSelectedIndex;
         public int TabSelectedIndex
         {
-            get
-            {
-                return _tabSelectedIndex;
-            }
+            get => _tabSelectedIndex;
             set
             {
                 _tabSelectedIndex = value;
@@ -55,10 +60,7 @@ namespace UI.ViewModel
 
         public Process SelectedProcess
         {
-            get
-            {
-                return Model.SelectedProcess;
-            }
+            get => Model.SelectedProcess;
             set
             {
                 Model.SelectedProcess = value;
@@ -70,10 +72,7 @@ namespace UI.ViewModel
         private bool _tabInjectEnabled = true;
         public bool TabInjectEnabled
         {
-            get
-            {
-                return _tabInjectEnabled;
-            }
+            get => _tabInjectEnabled;
             set
             {
                 _tabInjectEnabled = value;
@@ -84,10 +83,7 @@ namespace UI.ViewModel
         private bool _tabEditModelsEnabled;
         public bool TabEditModelsEnabled
         {
-            get
-            {
-                return _tabEditModelsEnabled;
-            }
+            get => _tabEditModelsEnabled;
             set
             {
                 _tabEditModelsEnabled = value;
@@ -96,6 +92,7 @@ namespace UI.ViewModel
         }
 
         public RelayCommand InjectCommand { get; }
+        public RelayCommand DeleteSelectedModelCommand { get; }
         public RelayCommand SaveChangesCommand { get; }
         public RelayCommand ToggleModelsCommand { get; }
         public DxProcessMonitor DxProcessMonitor { get; }
@@ -110,6 +107,7 @@ namespace UI.ViewModel
             DxProcessMonitor = new DxProcessMonitor();
 
             InjectCommand = new RelayCommand(Inject, () => SelectedProcess != null);
+            DeleteSelectedModelCommand = new RelayCommand(DeleteSelectedModel, () => SelectedModel != null);
             SaveChangesCommand = new RelayCommand(SaveChanges);
             ToggleModelsCommand = new RelayCommand(ToggleModels);
             
@@ -203,6 +201,14 @@ namespace UI.ViewModel
         private void WriteToLog(string text)
         {
             Log += $"{text}\n";
+        }
+
+        private void DeleteSelectedModel()
+        {
+            SavedModels.Remove(SelectedModel);
+            ModelInfoRepository.Save(SavedModels);
+            SavedModels = ModelInfoRepository.Get();
+            HookManager.ReloadModels(SavedModels);
         }
 
         private void SaveChanges()

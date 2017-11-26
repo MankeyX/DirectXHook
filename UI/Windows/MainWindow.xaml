@@ -41,7 +41,8 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                     <ListView Name="SavedModelsList" Margin="10" 
                               VerticalAlignment="Stretch" Width="390"
-                              ItemsSource="{Binding SavedModels}">
+                              ItemsSource="{Binding SavedModels}"
+                              SelectedItem="{Binding SelectedModel}">
                         <ListView.View>
                             <GridView>
                                 <GridViewColumn Width="30">
@@ -65,12 +66,21 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <Button Name="ButtonSaveChanges" 
-                            VerticalAlignment="Bottom" HorizontalAlignment="Right" 
-                            Padding="10 5" Margin="0 0 10 10"
-                            Command="{Binding SaveChangesCommand}">
-                        Save Changes
-                    </Button>
+                    <StackPanel Width="90" 
+                                VerticalAlignment="Bottom"
+                                Margin="0 0 0 10">
+                        <Button Name="ButtonDeleteModel"
+                                Command="{Binding DeleteSelectedModelCommand}"
+                                Padding="5"
+                                Margin="0 0 0 5">
+                            Delete Model
+                        </Button>
+                        <Button Name="ButtonSaveChanges" 
+                                Command="{Binding SaveChangesCommand}"
+                                Padding="5">
+                            Save Changes
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
             <TabItem Name="TabLog" Header="Log">

@@ -9,7 +9,7 @@ namespace UI.DirectX
 {
     public class DxProcessMonitor
     {
-        private static readonly string[] DxModuleNames = { "d3d9.dll", "d3d11.dll" };
+        private static readonly string[] DxModuleNames = { "d3d11.dll" };
 
         public ObservableCollection<Process> Processes { get; }
 

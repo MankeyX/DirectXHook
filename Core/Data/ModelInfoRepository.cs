@@ -8,12 +8,11 @@ namespace Core.Data
 {
     public class ModelInfoRepository : IModelInfoRepository
     {
-        private const string Filename = "savedModels";
         private readonly string _filePath;
 
-        public ModelInfoRepository()
+        public ModelInfoRepository(string filename)
         {
-            _filePath = Path.Combine(Directory.GetCurrentDirectory(), Filename);
+            _filePath = Path.Combine(Directory.GetCurrentDirectory(), filename);
         }
 
         public List<ModelInfo> Get()

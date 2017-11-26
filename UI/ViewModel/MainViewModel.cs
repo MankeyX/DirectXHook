@@ -98,12 +98,11 @@ namespace UI.ViewModel
         public DxProcessMonitor DxProcessMonitor { get; }
         public MainWindowModel Model { get; }
         public HookManager HookManager { get; }
-        public IModelInfoRepository ModelInfoRepository { get; }
+        public IModelInfoRepository ModelInfoRepository { get; private set; }
 
         public MainViewModel()
         {
             Model = new MainWindowModel();
-            ModelInfoRepository = new ModelInfoRepository();
             DxProcessMonitor = new DxProcessMonitor();
 
             InjectCommand = new RelayCommand(Inject, () => SelectedProcess != null);
@@ -143,6 +142,8 @@ namespace UI.ViewModel
             try
             {
                 WriteToLog("Attempting to inject DLL into process...");
+
+                ModelInfoRepository = new ModelInfoRepository(SelectedProcess.ProcessName);
 
                 HookManager.Inject(SelectedProcess.Id);
                 DxProcessMonitor.Stop();

@@ -46,9 +46,16 @@ namespace Hook.D3D11
         {
             lock (_lock)
             {
-                _drawIndexedHook.SavedModels = models;
-                _drawIndexedHook.SavedModels.Sort();
-                _shaders.Generate(models.Select(x => x.Color));
+                try
+                {
+                    _drawIndexedHook.SavedModels = models;
+                    _drawIndexedHook.SavedModels.Sort();
+                    _shaders.Generate(models.Select(x => x.Color));
+                }
+                catch (Exception ex)
+                {
+                    _server.Message($"Message: {ex.Message}, Stack Trace: {ex.StackTrace}, Exception: {ex}");
+                }
             }
         }
 
@@ -79,8 +86,10 @@ namespace Hook.D3D11
                     _shaders = new Shaders(_device);
                 }
 
-                using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(false, false), _shaders))
+                using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(true, true), _shaders))
                 {
+                    _server.Message($"DeviceContext: {deviceContext == null}");
+                    _server.Message($"Device: {deviceContext.Device == null}");
                     _server.NotifyHookStarted();
                     _server.Message("Ready for input...");
 

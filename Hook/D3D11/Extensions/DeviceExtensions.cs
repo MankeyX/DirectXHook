@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D11;
 
@@ -24,10 +25,10 @@ namespace Hook.D3D11.Extensions
 $@"
 float4 main() : SV_Target
 {{
-    return float4({r},{g},{b},0.7f);
+    return float4({r.ToString(CultureInfo.InvariantCulture)},{g.ToString(CultureInfo.InvariantCulture)},{b.ToString(CultureInfo.InvariantCulture)},0.7);
 }}");
 
-            using (var pixelShaderBytecode = ShaderBytecode.Compile(shaderText, "main", "ps_4_0"))
+            using (var pixelShaderBytecode = ShaderBytecode.Compile(shaderText, "main", "ps_5_0"))
             {
                 return new PixelShader(device, pixelShaderBytecode);
             }

@@ -7,12 +7,13 @@ namespace Hook.D3D11.Extensions
 {
     public static class DeviceExtensions
     {
-        public static DepthStencilState CreateDepthStencilState(this Device device, bool depth, bool writeEnable)
+        public static DepthStencilState CreateDepthStencilState(this Device device)
         {
             var description = new DepthStencilStateDescription
             {
-                IsDepthEnabled = depth,
-                DepthWriteMask = writeEnable ? DepthWriteMask.All : DepthWriteMask.Zero,
+                IsStencilEnabled = false,
+                IsDepthEnabled = true,
+                DepthWriteMask = DepthWriteMask.All,
                 DepthComparison = Comparison.Always
             };
 
@@ -23,12 +24,12 @@ namespace Hook.D3D11.Extensions
         {
             var shaderText = Encoding.ASCII.GetBytes(
 $@"
-float4 main() : SV_Target
+float4 main() : SV_TARGET0
 {{
-    return float4({r.ToString(CultureInfo.InvariantCulture)},{g.ToString(CultureInfo.InvariantCulture)},{b.ToString(CultureInfo.InvariantCulture)},0.7);
+    return float4({r.ToString(CultureInfo.InvariantCulture)}, {g.ToString(CultureInfo.InvariantCulture)}, {b.ToString(CultureInfo.InvariantCulture)}, 0.7f);
 }}");
-
-            using (var pixelShaderBytecode = ShaderBytecode.Compile(shaderText, "main", "ps_5_0"))
+            
+            using (var pixelShaderBytecode = ShaderBytecode.Compile(shaderText, "main", "ps_4_0"))
             {
                 return new PixelShader(device, pixelShaderBytecode);
             }

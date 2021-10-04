@@ -8,6 +8,7 @@ using Core.Interop;
 using Core.Models;
 using Hook.D3D11.Extensions;
 using Hook.Infrastructure;
+using SharpDX.Diagnostics;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
@@ -83,10 +84,10 @@ namespace Hook.D3D11
 
                 lock (_lock)
                 {
-                    _shaders = new Shaders(_device);
+                    _shaders = new Shaders(_device, _server);
                 }
-
-                using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(true, true), _shaders))
+                
+                using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(), _shaders, _server))
                 {
                     _server.Message($"DeviceContext: {deviceContext == null}");
                     _server.Message($"Device: {deviceContext.Device == null}");
@@ -130,9 +131,10 @@ namespace Hook.D3D11
                     }
                 }
             }
-            catch (RemotingException)
+            catch (RemotingException e)
             {
                 // Host application has exited
+                _server.Message(e.ToString());
             }
             catch (Exception e)
             {

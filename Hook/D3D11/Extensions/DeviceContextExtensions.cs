@@ -6,39 +6,48 @@ namespace Hook.D3D11.Extensions
 {
     public static class DeviceContextExtensions
     {
-        // TODO: Check if we can dispose buffers after getting them
         public static ModelInfo GetModelInfo(this DeviceContext deviceContext, int indexCount)
         {
             var vertexBuffers = new Buffer[1];
             var strides = new int[1];
             var offsets = new int[1];
 
-            deviceContext.InputAssembler.GetIndexBuffer(out var buffer, out var format, out var offset);
+            deviceContext.InputAssembler.GetIndexBuffer(out var buffer, out _, out _);
             deviceContext.InputAssembler.GetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
-            var resources = deviceContext.PixelShader.GetShaderResources(0, 1);
+            
+            using (vertexBuffers[0])
+            using (buffer)
+            using (var resources = deviceContext.PixelShader.GetShaderResources(0, 1)?[0])
+            {
+                ModelInfo modelInfo;
+            
+                if (resources == null)
+                    modelInfo = new ModelInfo(
+                        indexCount,
+                        buffer.Description.SizeInBytes,
+                        strides[0],
+                        vertexBuffers[0].Description.SizeInBytes,
+                        0,
+                        Color.White);
+                else
+                    modelInfo = new ModelInfo(
+                        indexCount,
+                        buffer.Description.SizeInBytes,
+                        strides[0],
+                        vertexBuffers[0].Description.SizeInBytes,
+                        (int)resources.Description.Format,
+                        Color.White);
 
-            if (resources[0] == null)
-                return new ModelInfo(
-                    indexCount,
-                    buffer.Description.SizeInBytes,
-                    strides[0],
-                    vertexBuffers[0].Description.SizeInBytes,
-                    0,
-                    Color.White);
-
-            return new ModelInfo(
-                indexCount,
-                buffer.Description.SizeInBytes,
-                strides[0],
-                vertexBuffers[0].Description.SizeInBytes,
-                (int)resources[0].Description.Format,
-                Color.White);
+                return modelInfo;
+            }
         }
 
         public static int GetIndexByteWidth(this DeviceContext deviceContext)
         {
-            deviceContext.InputAssembler.GetIndexBuffer(out var buffer, out var format, out var offset);
-            return buffer.Description.SizeInBytes;
+            deviceContext.InputAssembler.GetIndexBuffer(out var buffer, out _, out _);
+            
+            using (buffer)
+                return buffer.Description.SizeInBytes;
         }
     }
 }

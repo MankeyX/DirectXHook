@@ -17,30 +17,34 @@ namespace Hook.D3D11
         private readonly DepthStencilState _depthDisabledState;
         private readonly List<ModelInfo> _modelsInScene;
         private readonly Shaders _shaders;
+        private readonly ServerInterface _serverInterface;
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
         private delegate void DrawIndexed(IntPtr deviceContextPointer, int indexCount, int startIndex, int baseVertexLocation);
 
         private int _currentIndex;
         private int _selectedByteWidth;
+        private ModelInfo _currentItem;
 
         public bool OnlyRenderSavedModels { get; private set; }
         public bool IsLoggerEnabled { get; private set; }
         public List<ModelInfo> SavedModels { get; set; }
 
-        public DrawIndexedHook(DeviceContext deviceContext, DepthStencilState depthDisabledState, Shaders shaders)
+        public DrawIndexedHook(DeviceContext deviceContext, DepthStencilState depthDisabledState, Shaders shaders, ServerInterface serverInterface)
         {
             _deviceContext = deviceContext;
             _depthDisabledState = depthDisabledState;
             _shaders = shaders;
+            _serverInterface = serverInterface;
             _modelsInScene = new List<ModelInfo>();
             SavedModels = new List<ModelInfo>();
 
             _drawIndexedHook = new FunctionHook<DrawIndexed>(
-                VirtualTableAddress.GetVtableAddress(_deviceContext.NativePointer, (int)VirtualTableIndices.D3D11DeviceContext.DrawIndexed),
+                VirtualTableAddress.GetVtableAddress(_deviceContext.NativePointer, (int) VirtualTableIndices.D3D11DeviceContext.DrawIndexed),
                 new DrawIndexed(OnDrawIndexed),
                 this);
 
+            _serverInterface.Message("DrawIndexedHook.ctor");
             _drawIndexedHook.Activate();
         }
 
@@ -51,50 +55,50 @@ namespace Hook.D3D11
                 _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
                 return;
             }
-
-            if (!OnlyRenderSavedModels)
-                _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
             
-            var currentItem = GetCurrentItem(indexCount);
+            _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
 
-            if (IsLoggerEnabled)
+            using (var defaultDepthState = _deviceContext.OutputMerger.GetDepthStencilState(out var stencilRef))
             {
-                if (_selectedByteWidth == _deviceContext.GetIndexByteWidth() / IndexByteWidthDivider)
-                {
-                    if (!_modelsInScene.Contains(currentItem))
-                        _modelsInScene.Add(currentItem);
+                _currentItem = GetCurrentItem(indexCount);
 
-                    if (IsCurrentModel(currentItem, _currentIndex))
+                if (IsLoggerEnabled)
+                {
+                    _deviceContext.OutputMerger.SetDepthStencilState(_depthDisabledState, stencilRef);
+                    if (_selectedByteWidth == _deviceContext.GetIndexByteWidth() / IndexByteWidthDivider)
                     {
-                        DrawCustom(indexCount, startIndex, baseVertexLocation, Color.Red);
+                        if (!_modelsInScene.Contains(_currentItem))
+                            _modelsInScene.Add(_currentItem);
+
+                        if (IsCurrentModel(_currentItem, _currentIndex))
+                        {
+                            DrawCustom(indexCount, startIndex, baseVertexLocation, Color.Red);
+                            return;
+                        }
+
+                        DrawCustom(indexCount, startIndex, baseVertexLocation, Color.White);
                         return;
                     }
-
-                    DrawCustom(indexCount, startIndex, baseVertexLocation, Color.White);
-                    return;
                 }
-            }
 
-            lock (SavedModels)
-            {
-                if (IsSavedModel(currentItem, out var index))
+                lock (SavedModels)
                 {
-                    DrawCustom(indexCount, startIndex, baseVertexLocation, SavedModels[index].Color);
+                    if (IsSavedModel(_currentItem, out var index))
+                    {
+                        _deviceContext.OutputMerger.SetDepthStencilState(_depthDisabledState, stencilRef);
+                        DrawCustom(indexCount, startIndex, baseVertexLocation, SavedModels[index].Color);
+                    }
                 }
+                
+                _deviceContext.OutputMerger.SetDepthStencilState(defaultDepthState, stencilRef);
             }
         }
 
         private void DrawCustom(int indexCount, int startIndex, int baseVertexLocation, Color color)
         {
-            _deviceContext.DrawIndexed(indexCount, startIndex, baseVertexLocation);
-
             // Disable depth testing so we can see the object through walls, and color it with a shader to make it more visible
             _deviceContext.PixelShader.SetShader(_shaders.Get(color), null, 0);
-            _deviceContext.OutputMerger.SetDepthStencilState(_depthDisabledState);
             _deviceContext.DrawIndexed(indexCount, startIndex, baseVertexLocation);
-
-            // Reset the depth stencil state to the default values
-            _deviceContext.OutputMerger.SetDepthStencilState(null);
         }
 
         private ModelInfo GetCurrentItem(int indexCount)
@@ -108,7 +112,7 @@ namespace Hook.D3D11
                 _modelsInScene[currentIndex] != null &&
                 _modelsInScene[currentIndex].Equals(currentModel);
         }
-        
+
         private bool IsSavedModel(ModelInfo model, out int savedItemIndex)
         {
             return (savedItemIndex = SavedModels.BinarySearch(model)) >= 0;
@@ -142,7 +146,15 @@ namespace Hook.D3D11
         {
             _selectedByteWidth = 0;
             _currentIndex = 0;
-            return IsLoggerEnabled = !IsLoggerEnabled;
+            IsLoggerEnabled = !IsLoggerEnabled;
+
+            if (!IsLoggerEnabled)
+            {
+                _modelsInScene.Clear();
+                _serverInterface.Message("DrawIndexedHook.ToggleLogger False");
+            }
+
+            return IsLoggerEnabled;
         }
 
         public void RenderSavedModelsOnly(bool enabled)

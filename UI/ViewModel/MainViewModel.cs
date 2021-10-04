@@ -121,6 +121,9 @@ namespace UI.ViewModel
             HookManager.ServerInterface.HookStarted += HookStarted;
             HookManager.ServerInterface.SaveModelRequestRecieved += SaveModelRequestRecieved;
 
+            var is64bit = Environment.Is64BitProcess ? "64-bit" : "32-bit";
+            var is64bitOs = Environment.Is64BitOperatingSystem ? "64-bit" : "32-bit";
+            WriteToLog($"App target: {is64bit}, OS: {is64bitOs}");
             WriteToLog("Controls:\n" +
                        "End = Toggle Model Logger\n" +
                        "\tNumpad 1 = Decrease Byte Width\n" +

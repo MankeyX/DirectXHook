@@ -9,11 +9,13 @@ namespace Hook.D3D11
     public class Shaders : IDisposable
     {
         private readonly Device _device;
+        private readonly ServerInterface _serverInterface;
         private readonly Dictionary<Color, PixelShader> _createdShaders;
 
-        public Shaders(Device device)
+        public Shaders(Device device, ServerInterface serverInterface)
         {
             _device = device;
+            _serverInterface = serverInterface;
             _createdShaders = new Dictionary<Color, PixelShader>();
         }
 
@@ -21,6 +23,7 @@ namespace Hook.D3D11
         {
             lock (_createdShaders)
             {
+                _serverInterface.Message("Creating shaders");
                 Dispose();
                 _createdShaders.Clear();
 
@@ -48,6 +51,7 @@ namespace Hook.D3D11
                 }
                 catch
                 {
+                    _serverInterface.Message("Creating default shaders");
                     EnsureDefaultColors();
                     return _createdShaders[Color.White];
                 }
@@ -69,6 +73,7 @@ namespace Hook.D3D11
         {
             lock (_createdShaders)
             {
+                _serverInterface.Message("Disposing shaders");
                 foreach (var createdShader in _createdShaders)
                     createdShader.Value.Dispose();
             }

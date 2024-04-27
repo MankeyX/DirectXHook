@@ -12,7 +12,7 @@ namespace Core.Interop
 
         public static bool GetKey(Keys virtualKey)
         {
-            return 0 != (GetAsyncKeyState((int)virtualKey) & KeyDown);
+            return (GetAsyncKeyState((int)virtualKey) & KeyDown) == KeyDown;
         }
     }
 }

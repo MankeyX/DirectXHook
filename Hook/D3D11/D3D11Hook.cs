@@ -90,7 +90,7 @@ namespace Hook.D3D11
                 using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(), _shaders, _server))
                 {
                     _server.Message($"DeviceContext: {deviceContext == null}");
-                    _server.Message($"Device: {deviceContext.Device == null}");
+                    _server.Message($"Device: {deviceContext?.Device == null}");
                     _server.NotifyHookStarted();
                     _server.Message("Ready for input...");
 
@@ -120,8 +120,11 @@ namespace Hook.D3D11
                         {
                             var selectedModel = _drawIndexedHook.GetSelectedModel();
 
-                            _server.RequestSaveModel(selectedModel);
-                            Thread.Sleep(1000);
+                            if (selectedModel != null)
+                            {
+                                _server.RequestSaveModel(selectedModel);
+                                Thread.Sleep(1000);
+                            }
                         }
 
                         // Only render saved models - Immediate

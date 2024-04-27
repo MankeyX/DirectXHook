@@ -55,8 +55,11 @@ namespace Hook.D3D11
                 _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
                 return;
             }
-            
-            _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
+
+            if (!OnlyRenderSavedModels)
+            {
+                _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
+            }
 
             using (var defaultDepthState = _deviceContext.OutputMerger.GetDepthStencilState(out var stencilRef))
             {
@@ -164,6 +167,11 @@ namespace Hook.D3D11
 
         public ModelInfo GetSelectedModel()
         {
+            if (_modelsInScene.Count <= _currentIndex)
+            {
+                return null;
+            }
+
             return _modelsInScene[_currentIndex];
         }
 

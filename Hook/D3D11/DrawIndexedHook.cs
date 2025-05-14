@@ -15,6 +15,7 @@ namespace Hook.D3D11
         private readonly DeviceContext _deviceContext;
         private readonly FunctionHook<DrawIndexed> _drawIndexedHook;
         private readonly DepthStencilState _depthDisabledState;
+        private readonly BlendState _alphaBlendState;
         private readonly List<ModelInfo> _modelsInScene;
         private readonly Shaders _shaders;
         private readonly ServerInterface _serverInterface;
@@ -30,10 +31,17 @@ namespace Hook.D3D11
         public bool IsLoggerEnabled { get; private set; }
         public List<ModelInfo> SavedModels { get; set; }
 
-        public DrawIndexedHook(DeviceContext deviceContext, DepthStencilState depthDisabledState, Shaders shaders, ServerInterface serverInterface)
+        public DrawIndexedHook(
+            DeviceContext deviceContext,
+            DepthStencilState depthDisabledState,
+            BlendState alphaBlendState,
+            Shaders shaders,
+            ServerInterface serverInterface
+        )
         {
             _deviceContext = deviceContext;
             _depthDisabledState = depthDisabledState;
+            _alphaBlendState = alphaBlendState;
             _shaders = shaders;
             _serverInterface = serverInterface;
             _modelsInScene = new List<ModelInfo>();
@@ -61,6 +69,8 @@ namespace Hook.D3D11
                 _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
             }
 
+            var originalBlendState =
+                _deviceContext.OutputMerger.GetBlendState(out var originalBlendFactor, out var originalMaskRef);
             using (var defaultDepthState = _deviceContext.OutputMerger.GetDepthStencilState(out var stencilRef))
             {
                 _currentItem = GetCurrentItem(indexCount);
@@ -88,12 +98,16 @@ namespace Hook.D3D11
                 {
                     if (IsSavedModel(_currentItem, out var index))
                     {
+                        _deviceContext.OutputMerger.SetBlendState(_alphaBlendState);
                         _deviceContext.OutputMerger.SetDepthStencilState(_depthDisabledState, stencilRef);
                         DrawCustom(indexCount, startIndex, baseVertexLocation, SavedModels[index].Color);
                     }
                 }
                 
                 _deviceContext.OutputMerger.SetDepthStencilState(defaultDepthState, stencilRef);
+                _deviceContext.OutputMerger.SetBlendState(originalBlendState, originalBlendFactor, originalMaskRef);
+
+                originalBlendState?.Dispose();
             }
         }
 
@@ -180,6 +194,7 @@ namespace Hook.D3D11
             _drawIndexedHook?.Deactivate();
             _drawIndexedHook?.Dispose();
             _depthDisabledState?.Dispose();
+            _alphaBlendState.Dispose();
 
             // Don't dispose _deviceContext, it will crash the application or game
         }

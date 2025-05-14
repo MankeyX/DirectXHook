@@ -12,12 +12,28 @@ namespace Hook.D3D11.Extensions
             var description = new DepthStencilStateDescription
             {
                 IsStencilEnabled = false,
-                IsDepthEnabled = true,
-                DepthWriteMask = DepthWriteMask.All,
+                IsDepthEnabled = false,
+                DepthWriteMask = DepthWriteMask.Zero,
                 DepthComparison = Comparison.Always
             };
 
             return new DepthStencilState(device, description);
+        }
+
+        public static BlendState CreateBlendState(this Device device)
+        {
+            var description = new BlendStateDescription();
+
+            description.RenderTarget[0].IsBlendEnabled = true;
+            description.RenderTarget[0].SourceBlend = BlendOption.One;
+            description.RenderTarget[0].DestinationBlend = BlendOption.One;
+            description.RenderTarget[0].BlendOperation = BlendOperation.Add;
+            description.RenderTarget[0].SourceAlphaBlend = BlendOption.One;
+            description.RenderTarget[0].DestinationAlphaBlend = BlendOption.Zero;
+            description.RenderTarget[0].AlphaBlendOperation = BlendOperation.Add;
+            description.RenderTarget[0].RenderTargetWriteMask = ColorWriteMaskFlags.All;
+
+            return new BlendState(device, description);
         }
 
         public static PixelShader GenerateShader(this Device device, float r, float g, float b)
@@ -26,7 +42,12 @@ namespace Hook.D3D11.Extensions
 $@"
 float4 main() : SV_TARGET0
 {{
-    return float4({r.ToString(CultureInfo.InvariantCulture)}, {g.ToString(CultureInfo.InvariantCulture)}, {b.ToString(CultureInfo.InvariantCulture)}, 0.7f);
+    return float4(
+        {r.ToString(CultureInfo.InvariantCulture)},
+        {g.ToString(CultureInfo.InvariantCulture)},
+        {b.ToString(CultureInfo.InvariantCulture)},
+        0.3f
+    );
 }}");
             
             using (var pixelShaderBytecode = ShaderBytecode.Compile(shaderText, "main", "ps_4_0"))

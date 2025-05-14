@@ -87,7 +87,13 @@ namespace Hook.D3D11
                     _shaders = new Shaders(_device, _server);
                 }
                 
-                using (_drawIndexedHook = new DrawIndexedHook(deviceContext, _device.CreateDepthStencilState(), _shaders, _server))
+                using (_drawIndexedHook = new DrawIndexedHook(
+                           deviceContext,
+                           _device.CreateDepthStencilState(),
+                           _device.CreateBlendState(),
+                           _shaders,
+                           _server
+                        ))
                 {
                     _server.Message($"DeviceContext: {deviceContext == null}");
                     _server.Message($"Device: {deviceContext?.Device == null}");

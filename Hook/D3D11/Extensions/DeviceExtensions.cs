@@ -24,13 +24,7 @@ namespace Hook.D3D11.Extensions
         {
             var description = new BlendStateDescription();
 
-            description.RenderTarget[0].IsBlendEnabled = true;
-            description.RenderTarget[0].SourceBlend = BlendOption.One;
-            description.RenderTarget[0].DestinationBlend = BlendOption.One;
-            description.RenderTarget[0].BlendOperation = BlendOperation.Add;
-            description.RenderTarget[0].SourceAlphaBlend = BlendOption.One;
-            description.RenderTarget[0].DestinationAlphaBlend = BlendOption.Zero;
-            description.RenderTarget[0].AlphaBlendOperation = BlendOperation.Add;
+            description.RenderTarget[0].IsBlendEnabled = false;
             description.RenderTarget[0].RenderTargetWriteMask = ColorWriteMaskFlags.All;
 
             return new BlendState(device, description);
@@ -46,7 +40,7 @@ float4 main() : SV_TARGET0
         {r.ToString(CultureInfo.InvariantCulture)},
         {g.ToString(CultureInfo.InvariantCulture)},
         {b.ToString(CultureInfo.InvariantCulture)},
-        0.3f
+        1
     );
 }}");
             

@@ -2,21 +2,21 @@
 using System.Collections.Generic;
 using Core.Models;
 using Hook.D3D11.Extensions;
-using SharpDX.Direct3D11;
+using Vortice.Direct3D11;
 
 namespace Hook.D3D11
 {
     public class Shaders : IDisposable
     {
-        private readonly Device _device;
+        private readonly ID3D11Device _device;
         private readonly ServerInterface _serverInterface;
-        private readonly Dictionary<Color, PixelShader> _createdShaders;
+        private readonly Dictionary<Color, ID3D11PixelShader> _createdShaders;
 
-        public Shaders(Device device, ServerInterface serverInterface)
+        public Shaders(ID3D11Device device, ServerInterface serverInterface)
         {
             _device = device;
             _serverInterface = serverInterface;
-            _createdShaders = new Dictionary<Color, PixelShader>();
+            _createdShaders = new Dictionary<Color, ID3D11PixelShader>();
         }
 
         public void Generate(IEnumerable<Color> colors)
@@ -40,7 +40,7 @@ namespace Hook.D3D11
             }
         }
 
-        public PixelShader Get(Color color)
+        public ID3D11PixelShader Get(Color color)
         {
             lock (_createdShaders)
             {

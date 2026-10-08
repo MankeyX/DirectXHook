@@ -1,15 +1,9 @@
-﻿using GalaSoft.MvvmLight.Threading;
-
-namespace UI
+﻿namespace UI
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
     public partial class App
     {
-        public App()
-        {
-            DispatcherHelper.Initialize();
-        }
     }
 }

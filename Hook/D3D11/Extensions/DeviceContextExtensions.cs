@@ -1,40 +1,41 @@
 ﻿using Core.Models;
-using SharpDX.Direct3D11;
-using Buffer = SharpDX.Direct3D11.Buffer;
+using Vortice.Direct3D11;
 
 namespace Hook.D3D11.Extensions
 {
     public static class DeviceContextExtensions
     {
-        public static ModelInfo GetModelInfo(this DeviceContext deviceContext, int indexCount)
+        public static ModelInfo GetModelInfo(this ID3D11DeviceContext deviceContext, int indexCount)
         {
-            var vertexBuffers = new Buffer[1];
-            var strides = new int[1];
-            var offsets = new int[1];
+            var vertexBuffers = new ID3D11Buffer[1];
+            var strides = new uint[1];
+            var offsets = new uint[1];
+            var shaderResources = new ID3D11ShaderResourceView[1];
 
-            deviceContext.InputAssembler.GetIndexBuffer(out var buffer, out _, out _);
-            deviceContext.InputAssembler.GetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+            deviceContext.IAGetIndexBuffer(out var buffer, out _, out _);
+            deviceContext.IAGetVertexBuffers(0, 1, vertexBuffers, strides, offsets);
+            deviceContext.PSGetShaderResources(0, 1, shaderResources);
             
             using (vertexBuffers[0])
             using (buffer)
-            using (var resources = deviceContext.PixelShader.GetShaderResources(0, 1)?[0])
+            using (var resources = shaderResources[0])
             {
                 ModelInfo modelInfo;
             
                 if (resources == null)
                     modelInfo = new ModelInfo(
                         indexCount,
-                        buffer.Description.SizeInBytes,
-                        strides[0],
-                        vertexBuffers[0].Description.SizeInBytes,
+                        (int)buffer.Description.ByteWidth,
+                        (int)strides[0],
+                        (int)vertexBuffers[0].Description.ByteWidth,
                         0,
                         Color.White);
                 else
                     modelInfo = new ModelInfo(
                         indexCount,
-                        buffer.Description.SizeInBytes,
-                        strides[0],
-                        vertexBuffers[0].Description.SizeInBytes,
+                        (int)buffer.Description.ByteWidth,
+                        (int)strides[0],
+                        (int)vertexBuffers[0].Description.ByteWidth,
                         (int)resources.Description.Format,
                         Color.White);
 
@@ -42,12 +43,12 @@ namespace Hook.D3D11.Extensions
             }
         }
 
-        public static int GetIndexByteWidth(this DeviceContext deviceContext)
+        public static int GetIndexByteWidth(this ID3D11DeviceContext deviceContext)
         {
-            deviceContext.InputAssembler.GetIndexBuffer(out var buffer, out _, out _);
+            deviceContext.IAGetIndexBuffer(out var buffer, out _, out _);
             
             using (buffer)
-                return buffer.Description.SizeInBytes;
+                return (int)buffer.Description.ByteWidth;
         }
     }
 }

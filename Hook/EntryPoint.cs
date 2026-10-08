@@ -1,39 +1,42 @@
-﻿using System;
-using System.Collections;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Ipc;
-using EasyHook;
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Hook.D3D11;
+using Hook.Infrastructure;
 
 namespace Hook
 {
-    public class EntryPoint : IEntryPoint
+    public static unsafe class EntryPoint
     {
-        private readonly ServerInterface _server;
-
-        public EntryPoint(RemoteHooking.IContext context, string channelName)
+        /// <summary>
+        /// Called by EasyHook in the target process after the library has been injected.
+        /// The user data is the UTF-16 name of the pipe the UI is listening on.
+        /// </summary>
+        [UnmanagedCallersOnly(EntryPoint = "NativeInjectionEntryPoint", CallConvs = new[] { typeof(CallConvStdcall) })]
+        public static void NativeInjectionEntryPoint(EasyHook.RemoteEntryInfo* remoteInfo)
         {
-            _server = RemoteHooking.IpcConnectClient<ServerInterface>(channelName);
-            _server.Ping();
+            // The user data is only valid during this call, so copy it before starting the hook thread.
+            var channelName = new string((char*)remoteInfo->UserData, 0, remoteInfo->UserDataSize / sizeof(char));
 
-            IDictionary properties = new Hashtable
-            {
-                ["name"] = channelName,
-                ["portName"] = channelName + Guid.NewGuid().ToString("N")
-            };
-            var binaryProvider = new BinaryServerFormatterSinkProvider
-            {
-                TypeFilterLevel = System.Runtime.Serialization.Formatters.TypeFilterLevel.Full
-            };
-
-            var clientServerChannel = new IpcServerChannel(properties, binaryProvider);
-            ChannelServices.RegisterChannel(clientServerChannel, false);
+            new Thread(() => Run(channelName)) { IsBackground = true, Name = "DirectXHook" }.Start();
         }
 
-        public void Run(RemoteHooking.IContext context, string channelName)
+        private static void Run(string channelName)
         {
-            var hook = new D3D11Hook(_server);
-            hook.Hook();
+            // An exception escaping this thread would take down the target process.
+            try
+            {
+                using (var server = new ServerInterface(channelName))
+                {
+                    var hook = new D3D11Hook(server);
+                    hook.Hook();
+                }
+            }
+            catch
+            {
+                // Nowhere to report this, the UI could not be reached.
+            }
         }
     }
 }

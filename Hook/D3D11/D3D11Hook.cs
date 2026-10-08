@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Runtime.Remoting;
 using System.Threading;
-using System.Windows.Forms;
 using Core.Interop;
 using Core.Models;
 using Hook.D3D11.Extensions;
 using Hook.Infrastructure;
-using SharpDX.Diagnostics;
-using SharpDX.Direct3D;
-using SharpDX.Direct3D11;
-using SharpDX.DXGI;
-using SharpDX.Windows;
-using Device = SharpDX.Direct3D11.Device;
+using Vortice.Direct3D;
+using Vortice.Direct3D11;
+using Vortice.DXGI;
 
 namespace Hook.D3D11
 {
@@ -22,25 +18,15 @@ namespace Hook.D3D11
         private readonly ServerInterface _server;
 
         private Shaders _shaders;
-        private Device _device;
+        private ID3D11Device _device;
         private DrawIndexedHook _drawIndexedHook;
 
         private readonly object _lock = new object();
 
         public D3D11Hook(ServerInterface server)
         {
-            try
-            {
-                var serverProxy = new ServerInterfaceProxy();
-                _server = server;
-                _server.OnModelsReloaded += serverProxy.ReloadModels;
-                serverProxy.OnModelsReloaded += OnModelsReloaded;
-            }
-            catch (Exception e)
-            {
-                _server.Message(e.ToString());
-                throw;
-            }
+            _server = server;
+            _server.OnModelsReloaded += OnModelsReloaded;
         }
 
         private void OnModelsReloaded(List<ModelInfo> models)
@@ -64,7 +50,7 @@ namespace Hook.D3D11
         {
             try
             {
-                DeviceContext deviceContext = null;
+                ID3D11DeviceContext deviceContext = null;
 
                 if (!InitializeSwapChain(out var swapChain))
                     _server.Message("Failed to create swap chain");
@@ -79,7 +65,8 @@ namespace Hook.D3D11
                         _device = eDevice;
                         deviceContext = eDeviceContext;
                     };
-                    while (!presentHook.Initialized) { }
+                    while (!presentHook.Initialized)
+                        Thread.Sleep(10);
                 }
 
                 lock (_lock)
@@ -104,25 +91,25 @@ namespace Hook.D3D11
                     {
                         if (_drawIndexedHook.IsLoggerEnabled)
                         {
-                            if (Input.GetKey(Keys.NumPad2))
+                            if (Input.GetKey(VirtualKey.NumPad2))
                                 _drawIndexedHook.ChangeModel(-1);
-                            else if (Input.GetKey(Keys.NumPad5))
+                            else if (Input.GetKey(VirtualKey.NumPad5))
                                 _drawIndexedHook.ChangeModel(1);
 
-                            if (Input.GetKey(Keys.NumPad1))
+                            if (Input.GetKey(VirtualKey.NumPad1))
                                 _drawIndexedHook.ChangeSelectedByteWidth(-1);
-                            else if (Input.GetKey(Keys.NumPad3))
+                            else if (Input.GetKey(VirtualKey.NumPad3))
                                 _drawIndexedHook.ChangeSelectedByteWidth(1);
 
                             Thread.Sleep(100);
                         }
 
-                        if (Input.GetKey(Keys.End))
+                        if (Input.GetKey(VirtualKey.End))
                         {
                             _server.Message($"Logger enabled: {_drawIndexedHook.ToggleLogger()}");
                             Thread.Sleep(1000);
                         }
-                        if (Input.GetKey(Keys.Insert))
+                        if (Input.GetKey(VirtualKey.Insert))
                         {
                             var selectedModel = _drawIndexedHook.GetSelectedModel();
 
@@ -134,16 +121,16 @@ namespace Hook.D3D11
                         }
 
                         // Only render saved models - Immediate
-                        _drawIndexedHook.RenderSavedModelsOnly(Input.GetKey(Keys.NumPad0));
+                        _drawIndexedHook.RenderSavedModelsOnly(Input.GetKey(VirtualKey.NumPad0));
 
                         _server.Ping();
+                        Thread.Sleep(10);
                     }
                 }
             }
-            catch (RemotingException e)
+            catch (IOException)
             {
                 // Host application has exited
-                _server.Message(e.ToString());
             }
             catch (Exception e)
             {
@@ -151,35 +138,42 @@ namespace Hook.D3D11
             }
         }
 
-        private static bool InitializeSwapChain(out SwapChain swapChain)
+        private static bool InitializeSwapChain(out IDXGISwapChain swapChain)
         {
-            var renderForm = new RenderForm();
+            var window = NativeWindow.Create();
 
             var swapChainDescription = new SwapChainDescription
             {
                 BufferCount = 1,
                 Flags = SwapChainFlags.None,
-                IsWindowed = true,
-                ModeDescription = new ModeDescription(100, 100, new Rational(60, 1), Format.R8G8B8A8_UNorm),
-                OutputHandle = renderForm.Handle,
+                Windowed = true,
+                BufferDescription = new ModeDescription(100, 100, new Rational(60, 1), Format.R8G8B8A8_UNorm),
+                OutputWindow = window,
                 SampleDescription = new SampleDescription(1, 0),
                 SwapEffect = SwapEffect.Discard,
-                Usage = Usage.RenderTargetOutput
+                BufferUsage = Usage.RenderTargetOutput
             };
 
-            Device.CreateWithSwapChain(
+            Vortice.Direct3D11.D3D11.D3D11CreateDeviceAndSwapChain(
+                null,
                 DriverType.Hardware,
                 DeviceCreationFlags.BgraSupport,
+                null,
                 swapChainDescription,
+                out swapChain,
                 out var device,
-                out swapChain
+                out _,
+                out var deviceContext
             );
+
+            NativeWindow.Destroy(window);
 
             if (swapChain == null)
                 return false;
 
-            renderForm.Dispose();
-            device?.Dispose(); // We don't need or want this
+            // We don't need or want these
+            deviceContext?.Dispose();
+            device?.Dispose();
             return true;
         }
     }

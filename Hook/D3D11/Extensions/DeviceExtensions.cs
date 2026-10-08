@@ -1,38 +1,33 @@
 ﻿using System.Globalization;
-using System.Text;
-using SharpDX.D3DCompiler;
-using SharpDX.Direct3D11;
+using Vortice.D3DCompiler;
+using Vortice.Direct3D11;
 
 namespace Hook.D3D11.Extensions
 {
     public static class DeviceExtensions
     {
-        public static DepthStencilState CreateDepthStencilState(this Device device)
+        public static ID3D11DepthStencilState CreateDepthStencilState(this ID3D11Device device)
         {
-            var description = new DepthStencilStateDescription
+            var description = new DepthStencilDescription
             {
-                IsStencilEnabled = false,
-                IsDepthEnabled = false,
+                StencilEnable = false,
+                DepthEnable = false,
                 DepthWriteMask = DepthWriteMask.Zero,
-                DepthComparison = Comparison.Always
+                DepthFunc = ComparisonFunction.Always
             };
 
-            return new DepthStencilState(device, description);
+            return device.CreateDepthStencilState(description);
         }
 
-        public static BlendState CreateBlendState(this Device device)
+        public static ID3D11BlendState CreateBlendState(this ID3D11Device device)
         {
-            var description = new BlendStateDescription();
-
-            description.RenderTarget[0].IsBlendEnabled = false;
-            description.RenderTarget[0].RenderTargetWriteMask = ColorWriteMaskFlags.All;
-
-            return new BlendState(device, description);
+            // Blending disabled, writing all color channels
+            return device.CreateBlendState(BlendDescription.Opaque);
         }
 
-        public static PixelShader GenerateShader(this Device device, float r, float g, float b)
+        public static ID3D11PixelShader GenerateShader(this ID3D11Device device, float r, float g, float b)
         {
-            var shaderText = Encoding.ASCII.GetBytes(
+            var shaderText =
 $@"
 float4 main() : SV_TARGET0
 {{
@@ -42,12 +37,10 @@ float4 main() : SV_TARGET0
         {b.ToString(CultureInfo.InvariantCulture)},
         1
     );
-}}");
+}}";
             
-            using (var pixelShaderBytecode = ShaderBytecode.Compile(shaderText, "main", "ps_4_0"))
-            {
-                return new PixelShader(device, pixelShaderBytecode);
-            }
+            var pixelShaderBytecode = Compiler.Compile(shaderText, "main", "PixelShader", "ps_4_0");
+            return device.CreatePixelShader(pixelShaderBytecode.Span);
         }
     }
 }

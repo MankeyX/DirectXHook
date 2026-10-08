@@ -1,25 +1,26 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
-using EasyHook;
 
-namespace Hook
+namespace Hook.Infrastructure
 {
-    public class FunctionHook<T> : IDisposable where T : class
+    /// <summary>
+    /// An EasyHook detour from <see cref="FunctionToHook"/> to a native function pointer.
+    /// While a thread is inside the hook handler, calling <see cref="FunctionToHook"/> again
+    /// goes straight to the original function (EasyHook's re-entrance barrier).
+    /// </summary>
+    public unsafe class FunctionHook : IDisposable
     {
         public IntPtr FunctionToHook { get; }
-        public Delegate NewFunction { get; }
-        public object Owner { get; }
-        public T OriginalFunction { get; private set; }
+        public IntPtr NewFunction { get; }
         public bool IsActive { get; private set; }
 
-        private LocalHook Hook { get; set; }
+        // Points to EasyHook's HOOK_TRACE_INFO, which must stay alive for the lifetime of the hook.
+        private IntPtr _handle;
 
-        public FunctionHook(IntPtr functionToHook, Delegate newFunction, object owner)
+        public FunctionHook(IntPtr functionToHook, IntPtr newFunction)
         {
             FunctionToHook = functionToHook;
             NewFunction = newFunction;
-            Owner = owner;
-            OriginalFunction = Marshal.GetDelegateForFunctionPointer<T>(functionToHook);
         }
 
         ~FunctionHook()
@@ -29,30 +30,44 @@ namespace Hook
 
         private void CreateHook()
         {
-            if (Hook != null)
+            if (_handle != IntPtr.Zero)
                 return;
 
-            Hook = LocalHook.Create(FunctionToHook, NewFunction, Owner);
+            _handle = (IntPtr)NativeMemory.AllocZeroed((nuint)IntPtr.Size);
+
+            var status = EasyHook.LhInstallHook(FunctionToHook, NewFunction, IntPtr.Zero, _handle);
+            if (status < 0)
+            {
+                NativeMemory.Free((void*)_handle);
+                _handle = IntPtr.Zero;
+            }
+            EasyHook.ThrowIfFailed(status);
         }
 
         private void UnHook()
         {
-            if (!IsActive)
+            if (_handle == IntPtr.Zero)
                 return;
 
-            Hook?.Dispose();
+            EasyHook.LhUninstallHook(_handle);
+            EasyHook.LhWaitForPendingRemovals();
+            NativeMemory.Free((void*)_handle);
+            _handle = IntPtr.Zero;
         }
 
         public void Activate()
         {
-            if (Hook == null)
+            if (_handle == IntPtr.Zero)
                 CreateHook();
 
             if (IsActive)
                 return;
 
             IsActive = true;
-            Hook.ThreadACL.SetExclusiveACL(new [] { 0 });
+
+            // Thread ID 0 is the current thread: intercept every thread except this one.
+            var threadIds = stackalloc int[] { 0 };
+            EasyHook.ThrowIfFailed(EasyHook.LhSetExclusiveACL(threadIds, 1, _handle));
         }
 
         public void Deactivate()
@@ -60,7 +75,10 @@ namespace Hook
             if (!IsActive) return;
 
             IsActive = false;
-            Hook.ThreadACL.SetInclusiveACL(new [] { 0 });
+
+            // Only intercept the current thread, which never calls the hooked function.
+            var threadIds = stackalloc int[] { 0 };
+            EasyHook.ThrowIfFailed(EasyHook.LhSetInclusiveACL(threadIds, 1, _handle));
         }
 
         #region IDisposable

@@ -1,20 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Windows;
 using Core.Data;
 using Core.Interop;
 using Core.Models;
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.CommandWpf;
-using GalaSoft.MvvmLight.Messaging;
-using GalaSoft.MvvmLight.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using UI.DirectX;
+using UI.Messages;
 using UI.Models;
 using UI.Remoting;
 
 namespace UI.ViewModel
 {
-    public class MainViewModel : ViewModelBase
+    public class MainViewModel : ObservableObject
     {
         public string Log
         {
@@ -22,7 +23,7 @@ namespace UI.ViewModel
             set
             {
                 Model.Log = value;
-                RaisePropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -32,7 +33,7 @@ namespace UI.ViewModel
             set
             {
                 Model.SavedModels = value;
-                RaisePropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -43,7 +44,7 @@ namespace UI.ViewModel
             set
             {
                 _selectedModel = value;
-                RaisePropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -54,7 +55,7 @@ namespace UI.ViewModel
             set
             {
                 _tabSelectedIndex = value;
-                RaisePropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -64,8 +65,8 @@ namespace UI.ViewModel
             set
             {
                 Model.SelectedProcess = value;
-                RaisePropertyChanged();
-                InjectCommand.RaiseCanExecuteChanged();
+                OnPropertyChanged();
+                InjectCommand.NotifyCanExecuteChanged();
             }
         }
 
@@ -76,7 +77,7 @@ namespace UI.ViewModel
             set
             {
                 _tabInjectEnabled = value;
-                RaisePropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -87,7 +88,7 @@ namespace UI.ViewModel
             set
             {
                 _tabEditModelsEnabled = value;
-                RaisePropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -114,12 +115,12 @@ namespace UI.ViewModel
 
             Model.WindowHandle = Process.GetCurrentProcess().MainWindowHandle;
 
-            Messenger.Default.Register<NotificationMessage<ModelInfo>>(this, OnSaveModel);
+            WeakReferenceMessenger.Default.Register<MainViewModel, SaveModelMessage>(this, (recipient, message) => recipient.OnSaveModel(message));
 
             HookManager = new HookManager();
-            HookManager.ServerInterface.MessageRecieved += WriteToLog;
-            HookManager.ServerInterface.HookStarted += HookStarted;
-            HookManager.ServerInterface.SaveModelRequestRecieved += SaveModelRequestRecieved;
+            HookManager.MessageRecieved += WriteToLog;
+            HookManager.HookStarted += HookStarted;
+            HookManager.SaveModelRequestRecieved += SaveModelRequestRecieved;
 
             var is64bit = Environment.Is64BitProcess ? "64-bit" : "32-bit";
             var is64bitOs = Environment.Is64BitOperatingSystem ? "64-bit" : "32-bit";
@@ -146,7 +147,7 @@ namespace UI.ViewModel
             {
                 WriteToLog("Attempting to inject DLL into process...");
 
-                ModelInfoRepository = new ModelInfoRepository(SelectedProcess.ProcessName);
+                ModelInfoRepository = new ModelInfoRepository($"{SelectedProcess.ProcessName}.json");
 
                 HookManager.Inject(SelectedProcess.Id);
                 DxProcessMonitor.Stop();
@@ -168,11 +169,11 @@ namespace UI.ViewModel
                 return;
 
             WriteToLog($"Saving model...\n{modelInfo}\n");
-            DispatcherHelper.RunAsync(() =>
+            Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 try
                 {
-                    Messenger.Default.Send(modelInfo);
+                    WeakReferenceMessenger.Default.Send(modelInfo);
                 }
                 catch (Exception e)
                 {
@@ -189,12 +190,9 @@ namespace UI.ViewModel
             HookManager.ReloadModels(SavedModels);
         }
 
-        private void OnSaveModel(NotificationMessage<ModelInfo> message)
+        private void OnSaveModel(SaveModelMessage message)
         {
-            if (message.Notification != "Save")
-                return;
-            
-            SavedModels.Add(message.Content);
+            SavedModels.Add(message.Value);
             SaveChanges();
             
             SavedModels = ModelInfoRepository.Get();

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace Core.Models
 {
-    [Serializable]
     public class ModelInfo : IComparable<ModelInfo>, INotifyPropertyChanged
     {
         private string _name;
@@ -37,6 +37,7 @@ namespace Core.Models
         }
         
         public ModelInfo() { }
+        [JsonConstructor]
         public ModelInfo(int indexCount, int indexByteWidth, int stride, 
                                int vertexByteWidth, int format, Color color)
         {
@@ -105,7 +106,6 @@ namespace Core.Models
         }
 
         #region INotifyPropertyChanged
-        [field:NonSerialized]
         public event PropertyChangedEventHandler PropertyChanged;
         
         protected virtual void NotifyPropertyChanged([CallerMemberName] string propertyName = null)

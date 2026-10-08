@@ -1,11 +1,12 @@
 ﻿using Core.Models;
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.CommandWpf;
-using GalaSoft.MvvmLight.Messaging;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using UI.Messages;
 
 namespace UI.ViewModel
 {
-    public class SaveModelInfoViewModel : ViewModelBase
+    public class SaveModelInfoViewModel : ObservableObject
     {
         private ModelInfo _model;
         public ModelInfo Model
@@ -14,7 +15,7 @@ namespace UI.ViewModel
             set
             {
                 _model = value;
-                RaisePropertyChanged();
+                OnPropertyChanged();
             }
         }
 
@@ -24,8 +25,8 @@ namespace UI.ViewModel
             set
             {
                 Model.Name = value;
-                RaisePropertyChanged();
-                SaveCommand.RaiseCanExecuteChanged();
+                OnPropertyChanged();
+                SaveCommand.NotifyCanExecuteChanged();
             }
         }
 
@@ -34,17 +35,17 @@ namespace UI.ViewModel
         public SaveModelInfoViewModel()
         {
             SaveCommand = new RelayCommand(Save, () => !string.IsNullOrEmpty(Model?.Name));
-            Messenger.Default.Register<ModelInfo>(this, (modelInfo) =>
+            WeakReferenceMessenger.Default.Register<SaveModelInfoViewModel, ModelInfo>(this, (recipient, modelInfo) =>
             {
-                Model = modelInfo;
-                ModelName = "";
+                recipient.Model = modelInfo;
+                recipient.ModelName = "";
             });
         }
 
         private void Save()
         {
-            Messenger.Default.Send(new NotificationMessage<ModelInfo>(Model, "Save"));
-            Messenger.Default.Send(new NotificationMessage("Close"));
+            WeakReferenceMessenger.Default.Send(new SaveModelMessage(Model));
+            WeakReferenceMessenger.Default.Send(new CloseSaveModelWindowMessage());
         }
     }
 }

@@ -1,32 +1,37 @@
-﻿using System;
+using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Core.Memory;
-using SharpDX;
-using SharpDX.Direct3D11;
-using SharpDX.DXGI;
-using Device = SharpDX.Direct3D11.Device;
+using Hook.Infrastructure;
+using Vortice.Direct3D11;
+using Vortice.DXGI;
 
 namespace Hook.D3D11
 {
-    // TODO: Create a base class that wants T as a CppObject
-    public class PresentHook : IDisposable
+    // TODO: Create a base class that wants T as a ComObject
+    public unsafe class PresentHook : IDisposable
     {
-        private readonly FunctionHook<Present> _presentHook;
+        // The hook handler has to be static, so only one PresentHook can be active at a time.
+        private static PresentHook _instance;
 
-        public bool Initialized { get; set; }
-        
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        private delegate int Present(IntPtr swapChainPointer, int syncInterval, int flags);
+        private readonly FunctionHook _presentHook;
+        private volatile bool _initialized;
 
-        public delegate void OnInitializedEvent(Device device, DeviceContext deviceContext);
+        public bool Initialized
+        {
+            get => _initialized;
+            set => _initialized = value;
+        }
+
+        public delegate void OnInitializedEvent(ID3D11Device device, ID3D11DeviceContext deviceContext);
         public event OnInitializedEvent OnInitialized;
 
-        public PresentHook(CppObject swapChain)
+        public PresentHook(IDXGISwapChain swapChain)
         {
-            _presentHook = new FunctionHook<Present>(
+            _instance = this;
+            _presentHook = new FunctionHook(
                 VirtualTableAddress.GetVtableAddress(swapChain.NativePointer, (int)VirtualTableIndices.DxgiSwapChain.Present),
-                new Present(OnPresent),
-                this);
+                (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, uint, uint, int>)&OnPresent);
 
             // This is not the SwapChain we're looking for...
             swapChain.Dispose();
@@ -34,17 +39,38 @@ namespace Hook.D3D11
             _presentHook.Activate();
         }
 
-        private int OnPresent(IntPtr swapChainPointer, int syncInterval, int flags)
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static int OnPresent(IntPtr swapChainPointer, uint syncInterval, uint flags)
         {
-            if (Initialized)
-                return _presentHook.OriginalFunction(swapChainPointer, syncInterval, flags);
-            
-            var device = new SwapChain(swapChainPointer).GetDevice<Device>();
-            OnInitialized?.Invoke(device, device.ImmediateContext);
+            var instance = _instance;
 
-            Initialized = true;
+            if (!instance.Initialized)
+            {
+                try
+                {
+                    // The wrapper releases its reference when disposed, so take one for it.
+                    Marshal.AddRef(swapChainPointer);
+                    using (var swapChain = new IDXGISwapChain(swapChainPointer))
+                    {
+                        var device = swapChain.GetDevice<ID3D11Device>();
+                        instance.OnInitialized?.Invoke(device, device.ImmediateContext);
+                    }
 
-            return _presentHook.OriginalFunction(swapChainPointer, syncInterval, flags);
+                    instance.Initialized = true;
+                }
+                catch
+                {
+                    // Try again on the next frame rather than crashing the target.
+                }
+            }
+
+            return CallOriginal(instance, swapChainPointer, syncInterval, flags);
+        }
+
+        private static int CallOriginal(PresentHook instance, IntPtr swapChainPointer, uint syncInterval, uint flags)
+        {
+            var original = (delegate* unmanaged[Stdcall]<IntPtr, uint, uint, int>)instance._presentHook.FunctionToHook;
+            return original(swapChainPointer, syncInterval, flags);
         }
 
         public void Dispose()

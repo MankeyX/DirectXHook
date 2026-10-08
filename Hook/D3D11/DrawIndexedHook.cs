@@ -1,40 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Core.Memory;
 using Core.Models;
 using Hook.D3D11.Extensions;
-using SharpDX.Direct3D11;
+using Hook.Infrastructure;
+using Vortice.Direct3D11;
 
 namespace Hook.D3D11
 {
-    public class DrawIndexedHook : IDisposable
+    public unsafe class DrawIndexedHook : IDisposable
     {
         private const int IndexByteWidthDivider = 100;
 
-        private readonly DeviceContext _deviceContext;
-        private readonly FunctionHook<DrawIndexed> _drawIndexedHook;
-        private readonly DepthStencilState _depthDisabledState;
-        private readonly BlendState _alphaBlendState;
+        // The hook handler has to be static, so only one DrawIndexedHook can be active at a time.
+        private static DrawIndexedHook _instance;
+
+        private readonly ID3D11DeviceContext _deviceContext;
+        private readonly FunctionHook _drawIndexedHook;
+        private readonly ID3D11DepthStencilState _depthDisabledState;
+        private readonly ID3D11BlendState _alphaBlendState;
         private readonly List<ModelInfo> _modelsInScene;
         private readonly Shaders _shaders;
         private readonly ServerInterface _serverInterface;
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError = true)]
-        private delegate void DrawIndexed(IntPtr deviceContextPointer, int indexCount, int startIndex, int baseVertexLocation);
-
         private int _currentIndex;
         private int _selectedByteWidth;
         private ModelInfo _currentItem;
+        private bool _hasReportedError;
 
         public bool OnlyRenderSavedModels { get; private set; }
         public bool IsLoggerEnabled { get; private set; }
         public List<ModelInfo> SavedModels { get; set; }
 
         public DrawIndexedHook(
-            DeviceContext deviceContext,
-            DepthStencilState depthDisabledState,
-            BlendState alphaBlendState,
+            ID3D11DeviceContext deviceContext,
+            ID3D11DepthStencilState depthDisabledState,
+            ID3D11BlendState alphaBlendState,
             Shaders shaders,
             ServerInterface serverInterface
         )
@@ -47,37 +50,65 @@ namespace Hook.D3D11
             _modelsInScene = new List<ModelInfo>();
             SavedModels = new List<ModelInfo>();
 
-            _drawIndexedHook = new FunctionHook<DrawIndexed>(
+            _instance = this;
+            _drawIndexedHook = new FunctionHook(
                 VirtualTableAddress.GetVtableAddress(_deviceContext.NativePointer, (int) VirtualTableIndices.D3D11DeviceContext.DrawIndexed),
-                new DrawIndexed(OnDrawIndexed),
-                this);
+                (IntPtr)(delegate* unmanaged[Stdcall]<IntPtr, uint, uint, int, void>)&OnDrawIndexedHook);
 
             _serverInterface.Message("DrawIndexedHook.ctor");
             _drawIndexedHook.Activate();
         }
 
-        private void OnDrawIndexed(IntPtr deviceContextPointer, int indexCount, int startIndex, int baseVertexLocation)
+        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+        private static void OnDrawIndexedHook(IntPtr deviceContextPointer, uint indexCount, uint startIndex, int baseVertexLocation)
+        {
+            var instance = _instance;
+
+            try
+            {
+                instance.OnDrawIndexed(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
+            }
+            catch (Exception e)
+            {
+                // An exception must not escape into the target process. Only report the first one,
+                // since this runs for every draw call.
+                if (!instance._hasReportedError)
+                {
+                    instance._hasReportedError = true;
+                    instance._serverInterface.Message($"DrawIndexed hook failed: {e}");
+                }
+            }
+        }
+
+        private void CallOriginal(IntPtr deviceContextPointer, uint indexCount, uint startIndex, int baseVertexLocation)
+        {
+            var original = (delegate* unmanaged[Stdcall]<IntPtr, uint, uint, int, void>)_drawIndexedHook.FunctionToHook;
+            original(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
+        }
+
+        private void OnDrawIndexed(IntPtr deviceContextPointer, uint indexCount, uint startIndex, int baseVertexLocation)
         {
             if (indexCount < 7)
             {
-                _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
+                CallOriginal(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
                 return;
             }
 
             if (!OnlyRenderSavedModels)
             {
-                _drawIndexedHook.OriginalFunction(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
+                CallOriginal(deviceContextPointer, indexCount, startIndex, baseVertexLocation);
             }
 
-            var originalBlendState =
-                _deviceContext.OutputMerger.GetBlendState(out var originalBlendFactor, out var originalMaskRef);
-            using (var defaultDepthState = _deviceContext.OutputMerger.GetDepthStencilState(out var stencilRef))
+            var originalBlendFactor = stackalloc float[4];
+            _deviceContext.OMGetBlendState(out var originalBlendState, originalBlendFactor, out var originalMaskRef);
+            _deviceContext.OMGetDepthStencilState(out var defaultDepthState, out var stencilRef);
+            using (defaultDepthState)
             {
-                _currentItem = GetCurrentItem(indexCount);
+                _currentItem = GetCurrentItem((int)indexCount);
 
                 if (IsLoggerEnabled)
                 {
-                    _deviceContext.OutputMerger.SetDepthStencilState(_depthDisabledState, stencilRef);
+                    _deviceContext.OMSetDepthStencilState(_depthDisabledState, stencilRef);
                     if (_selectedByteWidth == _deviceContext.GetIndexByteWidth() / IndexByteWidthDivider)
                     {
                         if (!_modelsInScene.Contains(_currentItem))
@@ -98,23 +129,23 @@ namespace Hook.D3D11
                 {
                     if (IsSavedModel(_currentItem, out var index))
                     {
-                        _deviceContext.OutputMerger.SetBlendState(_alphaBlendState);
-                        _deviceContext.OutputMerger.SetDepthStencilState(_depthDisabledState, stencilRef);
+                        _deviceContext.OMSetBlendState(_alphaBlendState);
+                        _deviceContext.OMSetDepthStencilState(_depthDisabledState, stencilRef);
                         DrawCustom(indexCount, startIndex, baseVertexLocation, SavedModels[index].Color);
                     }
                 }
                 
-                _deviceContext.OutputMerger.SetDepthStencilState(defaultDepthState, stencilRef);
-                _deviceContext.OutputMerger.SetBlendState(originalBlendState, originalBlendFactor, originalMaskRef);
+                _deviceContext.OMSetDepthStencilState(defaultDepthState, stencilRef);
+                _deviceContext.OMSetBlendState(originalBlendState, originalBlendFactor, originalMaskRef);
 
                 originalBlendState?.Dispose();
             }
         }
 
-        private void DrawCustom(int indexCount, int startIndex, int baseVertexLocation, Color color)
+        private void DrawCustom(uint indexCount, uint startIndex, int baseVertexLocation, Color color)
         {
             // Disable depth testing so we can see the object through walls, and color it with a shader to make it more visible
-            _deviceContext.PixelShader.SetShader(_shaders.Get(color), null, 0);
+            _deviceContext.PSSetShader(_shaders.Get(color));
             _deviceContext.DrawIndexed(indexCount, startIndex, baseVertexLocation);
         }
 

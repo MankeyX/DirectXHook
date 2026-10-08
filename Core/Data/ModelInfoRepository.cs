@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
+using System.Text.Json;
 using Core.Models;
+using Core.Serialization;
 
 namespace Core.Data
 {
@@ -22,12 +23,10 @@ namespace Core.Data
 
             using (var fileStream = new FileStream(_filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
             {
-                var formatter = new BinaryFormatter();
-
                 try
                 {
-                    var models = (List<ModelInfo>)formatter.Deserialize(fileStream);
-                    return models.ToList();
+                    var models = JsonSerializer.Deserialize(fileStream, CoreJsonContext.Default.ListModelInfo);
+                    return models?.ToList() ?? new List<ModelInfo>();
                 }
                 catch
                 {
@@ -40,8 +39,7 @@ namespace Core.Data
         {
             using (var fileStream = new FileStream(_filePath, FileMode.Create))
             {
-                var formatter = new BinaryFormatter();
-                formatter.Serialize(fileStream, models);
+                JsonSerializer.Serialize(fileStream, models, CoreJsonContext.Default.ListModelInfo);
             }
         }
     }

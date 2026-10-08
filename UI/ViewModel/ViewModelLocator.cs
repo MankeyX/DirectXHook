@@ -1,5 +1,4 @@
-using CommonServiceLocator;
-using GalaSoft.MvvmLight.Ioc;
+using System;
 
 namespace UI.ViewModel
 {
@@ -9,22 +8,14 @@ namespace UI.ViewModel
     /// </summary>
     public class ViewModelLocator
     {
-        /// <summary>
-        /// Initializes a new instance of the ViewModelLocator class.
-        /// </summary>
-        public ViewModelLocator()
-        {
-            ServiceLocator.SetLocatorProvider(() => SimpleIoc.Default);
-            
-            SimpleIoc.Default.Register<MainViewModel>();
-            SimpleIoc.Default.Register<SaveModelInfoViewModel>();
-        }
+        private static readonly Lazy<MainViewModel> MainInstance = new Lazy<MainViewModel>(() => new MainViewModel());
+        private static readonly Lazy<SaveModelInfoViewModel> SaveModelInfoInstance = new Lazy<SaveModelInfoViewModel>(() => new SaveModelInfoViewModel());
 
         public MainViewModel Main
         {
             get
             {
-                return ServiceLocator.Current.GetInstance<MainViewModel>();
+                return MainInstance.Value;
             }
         }
 
@@ -32,7 +23,7 @@ namespace UI.ViewModel
         {
             get
             {
-                return ServiceLocator.Current.GetInstance<SaveModelInfoViewModel>();
+                return SaveModelInfoInstance.Value;
             }
         }
 

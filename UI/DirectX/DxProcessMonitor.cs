@@ -3,7 +3,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Timers;
-using GalaSoft.MvvmLight.Threading;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace UI.DirectX
 {
@@ -14,10 +15,12 @@ namespace UI.DirectX
         public ObservableCollection<Process> Processes { get; }
 
         private readonly Timer _timer;
+        private readonly Dispatcher _dispatcher;
 
         public DxProcessMonitor()
         {
             Processes = new ObservableCollection<Process>();
+            _dispatcher = Application.Current.Dispatcher;
             UpdateProcessList();
 
             _timer = new Timer(1000);
@@ -65,7 +68,7 @@ namespace UI.DirectX
             if (Processes.Any(x => x.ProcessName.Equals(process.ProcessName)))
                 return;
 
-            DispatcherHelper.RunAsync(
+            _dispatcher.InvokeAsync(
                 () => Processes.Add(process));
 
             process.Exited += ProcessExited;
@@ -75,7 +78,7 @@ namespace UI.DirectX
         private void ProcessExited(object sender, EventArgs e)
         {
             var process = (Process)sender;
-            DispatcherHelper.RunAsync(
+            _dispatcher.InvokeAsync(
                 () => Processes.Remove(process));
         }
     }

@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using Core.Models;
-using GalaSoft.MvvmLight.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
+using UI.Messages;
 
 namespace UI.Windows
 {
@@ -11,16 +12,13 @@ namespace UI.Windows
             InitializeComponent();
             Closing += OnClosing;
 
-            Messenger.Default.Register<ModelInfo>(this, (modelInfo) =>
+            WeakReferenceMessenger.Default.Register<SaveModelInfoWindow, ModelInfo>(this, (recipient, modelInfo) =>
             {
-                Show();
+                recipient.Show();
             });
-            Messenger.Default.Register<NotificationMessage>(this, (message) =>
+            WeakReferenceMessenger.Default.Register<SaveModelInfoWindow, CloseSaveModelWindowMessage>(this, (recipient, message) =>
             {
-                if (message.Notification == "Close")
-                {
-                    Close();
-                }
+                recipient.Close();
             });
         }
 

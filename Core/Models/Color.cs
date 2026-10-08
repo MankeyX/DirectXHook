@@ -1,8 +1,7 @@
-﻿using System;
+﻿using System.Text.Json.Serialization;
 
 namespace Core.Models
 {
-    [Serializable]
     public class Color
     {
         private const float AntiGlowValue = 25f;
@@ -15,8 +14,11 @@ namespace Core.Models
         public byte B { get; set; }
 
         // Divide by our anti-glow value to combat the common glow/bloom post-process effect.
+        [JsonIgnore]
         public float Rf => (R / 255f) / AntiGlowValue;
+        [JsonIgnore]
         public float Gf => (G / 255f) / AntiGlowValue;
+        [JsonIgnore]
         public float Bf => (B / 255f) / AntiGlowValue;
 
         public Color() { }
